@@ -39,7 +39,7 @@ class TokenResponse(BaseModel):
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
-    company_id: int
+    company_id: Optional[int] = None
     role: Optional[str] = "technician"
 
 
