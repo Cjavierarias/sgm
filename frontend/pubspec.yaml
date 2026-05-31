@@ -1,0 +1,50 @@
+name: sgm_frontend
+description: Frontend Flutter para SaaS de mantenimiento industrial
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=2.17.0 <3.0.0'
+  flutter: '>=3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # HTTP client
+  dio: ^5.0.0
+
+  # State management (Riverpod moderno, alternativo: provider)
+  flutter_riverpod: ^2.0.0
+
+  # File picker para seleccionar fotos/archivos
+  file_picker: ^5.0.0
+
+  # Cargar variables de entorno desde .env
+  flutter_dotenv: ^6.0.0
+
+  # Routing declarativo
+  go_router: ^6.0.0
+
+  # Tipografías agradables
+  google_fonts: ^4.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Plataformas soportadas (configuración por defecto)
+  # Asegurate de configurar los archivos nativos en android/ y ios/ cuando sea necesario.
+  plugin:
+    platforms:
+      android:
+      ios:
+      web:
+
+# Notas:
+# - Ejecuta `flutter pub get` en la carpeta frontend/ para instalar dependencias.
+# - Ajustá versiones según tu canal de Flutter/Dart.
