@@ -11,23 +11,12 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # HTTP client
   dio: ^5.0.0
-
-  # State management (Riverpod moderno, alternativo: provider)
-  flutter_riverpod: ^2.0.0
-
-  # File picker para seleccionar fotos/archivos
-  file_picker: ^5.0.0
-
-  # Cargar variables de entorno desde .env
+  provider: ^6.0.5
+  google_sign_in: ^6.1.0
   flutter_dotenv: ^6.0.0
-
-  # Routing declarativo
-  go_router: ^6.0.0
-
-  # Tipografías agradables
-  google_fonts: ^4.0.3
+  go_router: ^6.0.4
+  shared_preferences: ^2.1.0
 
 dev_dependencies:
   flutter_test:
@@ -36,14 +25,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-  # Plataformas soportadas (configuración por defecto)
-  # Asegurate de configurar los archivos nativos en android/ y ios/ cuando sea necesario.
-  plugin:
-    platforms:
-      android:
-      ios:
-      web:
+  assets:
+    - .env
 
 # Notas:
 # - Ejecuta `flutter pub get` en la carpeta frontend/ para instalar dependencias.

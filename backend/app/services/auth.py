@@ -19,7 +19,7 @@ from typing import Any, Dict, Optional
 from dotenv import load_dotenv
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 
 
 # Cargar variables de entorno (opcional en producción si ya están definidas)
@@ -32,10 +32,6 @@ ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
 
-# Contexto de passlib para bcrypt
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
 def get_password_hash(password: str) -> str:
     """
     Hashea una contraseña plain-text usando bcrypt.
@@ -45,13 +41,14 @@ def get_password_hash(password: str) -> str:
     """
     if not password:
         raise ValueError("La contraseña no puede estar vacía")
-    return pwd_context.hash(password)
+    hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+    return hashed.decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifica una contraseña plain contra su hash almacenado."""
     try:
-        return pwd_context.verify(plain_password, hashed_password)
+        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
     except Exception:
         # Cualquier error en verificación se considera fallo de autenticación
         return False

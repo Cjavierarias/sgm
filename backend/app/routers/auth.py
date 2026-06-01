@@ -19,9 +19,9 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.database import get_db
-from backend.app.models.base import User, Company
-from backend.app.services import auth as auth_service
+from app.database import get_db
+from app.models.base import Company, User
+from app.services import auth as auth_service
 
 
 router = APIRouter()
@@ -102,24 +102,35 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
 
 @router.post("/auth/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
-    """Crea un nuevo usuario si la `company_id` existe.
+    """Crea un nuevo usuario. Si `company_id` no se proporciona, crea una Company por defecto.
 
     La contraseña se guarda como hash usando bcrypt.
     """
-    # Verificar existencia de la compañía
-    res = await db.execute(select(Company).where(Company.id == payload.company_id))
-    company = res.scalars().first()
-    if not company:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La compañía indicada no existe")
-
-    # Verificar email único
+    # Verificar email único antes de crear recursos adicionales
     res2 = await db.execute(select(User).where(User.email == payload.email))
     exists = res2.scalars().first()
     if exists:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El email ya está registrado")
 
+    if payload.company_id is None:
+        demo_company = Company(name="Empresa Demo")
+        db.add(demo_company)
+        await db.flush()
+        company_id = demo_company.id
+    else:
+        res = await db.execute(select(Company).where(Company.id == payload.company_id))
+        company = res.scalars().first()
+        if not company:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La compañía indicada no existe")
+        company_id = payload.company_id
+
     hashed = auth_service.get_password_hash(payload.password)
-    new_user = User(email=payload.email, hashed_password=hashed, company_id=payload.company_id, role=payload.role)
+    new_user = User(
+        email=payload.email,
+        hashed_password=hashed,
+        company_id=company_id,
+        role=payload.role or "technician",
+    )
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)

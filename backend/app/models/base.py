@@ -19,16 +19,21 @@ from typing import List, Optional
 
 from sqlalchemy import (
     Column,
+    DateTime,
+    Enum as SQLEnum,
+    ForeignKey,
     Integer,
     String,
-    DateTime,
-    ForeignKey,
     Text,
-    Enum as SQLEnum,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import declarative_base, relationship
 
-from backend.app.database import Base
+
+# Definimos la base de SQLAlchemy una sola vez aquí.
+# Otros módulos deben importar `Base` desde este archivo.
+Base = declarative_base()
+Base.__allow_unmapped__ = True
+Base.__allow_unmapped__ = True
 
 
 class WorkOrderStatus(PyEnum):
@@ -55,9 +60,21 @@ class Company(Base):
     status = Column(String(50), default="active")
 
     # Relaciones: una company tiene muchos usuarios, equipos y órdenes
-    users: List["User"] = relationship("User", back_populates="company", cascade="all, delete-orphan")
-    equipments: List["Equipment"] = relationship("Equipment", back_populates="company", cascade="all, delete-orphan")
-    work_orders: List["WorkOrder"] = relationship("WorkOrder", back_populates="company", cascade="all, delete-orphan")
+    users: List["User"] = relationship(
+        "User",
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
+    equipments: List["Equipment"] = relationship(
+        "Equipment",
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
+    work_orders: List["WorkOrder"] = relationship(
+        "WorkOrder",
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
 
 
 class User(Base):
@@ -72,7 +89,12 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
+    company_id = Column(
+        Integer,
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     email = Column(String(255), nullable=False, unique=True, index=True)
     hashed_password = Column(String(255), nullable=False)
     role = Column(String(50), default="technician")
@@ -80,8 +102,14 @@ class User(Base):
 
     # Relaciones
     company: Company = relationship("Company", back_populates="users")
-    assigned_work_orders: List["WorkOrder"] = relationship("WorkOrder", back_populates="assigned_to")
-    uploaded_photos: List["EquipmentPhoto"] = relationship("EquipmentPhoto", back_populates="uploaded_by")
+    assigned_work_orders: List["WorkOrder"] = relationship(
+        "WorkOrder",
+        back_populates="assigned_to",
+    )
+    uploaded_photos: List["EquipmentPhoto"] = relationship(
+        "EquipmentPhoto",
+        back_populates="uploaded_by",
+    )
 
 
 class Equipment(Base):
@@ -93,7 +121,12 @@ class Equipment(Base):
     __tablename__ = "equipments"
 
     id = Column(Integer, primary_key=True, index=True)
-    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
+    company_id = Column(
+        Integer,
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     code = Column(String(100), nullable=False, index=True)
     name = Column(String(255), nullable=False)
     location = Column(String(255), nullable=True)
@@ -101,12 +134,23 @@ class Equipment(Base):
     model = Column(String(100), nullable=True)
     manual_drive_url = Column(String(1000), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+    )
 
     # Relaciones
     company: Company = relationship("Company", back_populates="equipments")
-    photos: List["EquipmentPhoto"] = relationship("EquipmentPhoto", back_populates="equipment", cascade="all, delete-orphan")
-    work_orders: List["WorkOrder"] = relationship("WorkOrder", back_populates="equipment")
+    photos: List["EquipmentPhoto"] = relationship(
+        "EquipmentPhoto",
+        back_populates="equipment",
+        cascade="all, delete-orphan",
+    )
+    work_orders: List["WorkOrder"] = relationship(
+        "WorkOrder",
+        back_populates="equipment",
+    )
 
 
 class WorkOrder(Base):
@@ -119,13 +163,36 @@ class WorkOrder(Base):
     __tablename__ = "work_orders"
 
     id = Column(Integer, primary_key=True, index=True)
-    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
-    equipment_id = Column(Integer, ForeignKey("equipments.id", ondelete="SET NULL"), nullable=True, index=True)
-    assigned_to_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    status = Column(SQLEnum(WorkOrderStatus, name="workorderstatus", native_enum=False), nullable=False, default=WorkOrderStatus.open)
+    company_id = Column(
+        Integer,
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    equipment_id = Column(
+        Integer,
+        ForeignKey("equipments.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    assigned_to_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    status = Column(
+        SQLEnum(WorkOrderStatus, name="workorderstatus", native_enum=False),
+        nullable=False,
+        default=WorkOrderStatus.open,
+    )
     description = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+    )
 
     # Relaciones
     company: Company = relationship("Company", back_populates="work_orders")
@@ -143,9 +210,19 @@ class EquipmentPhoto(Base):
     __tablename__ = "equipment_photos"
 
     id = Column(Integer, primary_key=True, index=True)
-    equipment_id = Column(Integer, ForeignKey("equipments.id", ondelete="CASCADE"), nullable=False, index=True)
+    equipment_id = Column(
+        Integer,
+        ForeignKey("equipments.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     drive_url = Column(String(1000), nullable=False)
-    uploaded_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    uploaded_by_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
     # Relaciones
