@@ -8,3 +8,4 @@
 *.pyc
 __pycache__/
 flutter-sdk/
+nano .gitignore
