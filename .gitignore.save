@@ -1,0 +1,9 @@
+flutter-sdk//.venv/
+/build/
+/frontend/build/
+/.env
+.DS_Store
+/.vscode/
+/.idea/
+*.pyc
+__pycache__/flutter-sdk/
