@@ -76,12 +76,10 @@ fi
 cd "$ROOT/frontend"
 
 FLUTTER_BIN=""
-if [[ -x "$ROOT/flutter-sdk/bin/flutter" ]]; then
-  FLUTTER_BIN="$ROOT/flutter-sdk/bin/flutter"
-elif command -v flutter >/dev/null 2>&1; then
+if command -v flutter >/dev/null 2>&1; then
   FLUTTER_BIN="$(command -v flutter)"
 else
-  error_exit "No se encontró Flutter en PATH ni en $ROOT/flutter-sdk/bin/flutter. Instalá Flutter o cloná el SDK en $ROOT/flutter-sdk"
+  error_exit "Flutter no encontrado en PATH"
 fi
 
 info "Instalando dependencias de Flutter..."
