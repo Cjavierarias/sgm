@@ -30,7 +30,22 @@
   <link rel="icon" type="image/png" href="favicon.png"/>
 
   <title>sgm_frontend</title>
-  <link rel="manifest" href="manifest.json">
+  <script>
+    // Cargar manifest.json solo si no estamos dentro de github.dev (evita redirecciones/CORS)
+    (function() {
+      try {
+        var host = window.location.hostname || '';
+        if (!host.includes('github.dev') && !host.includes('app.github.dev')) {
+          var link = document.createElement('link');
+          link.rel = 'manifest';
+          link.href = 'manifest.json';
+          document.head.appendChild(link);
+        }
+      } catch (e) {
+        console.warn('No se cargó manifest.json:', e);
+      }
+    })();
+  </script>
 </head>
 <body>
   <!--
