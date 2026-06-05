@@ -10,21 +10,22 @@ class ApiService {
   }
 
   Future<void> _ensureInitialized() async {
-    if (_initialized) return;
+  if (_initialized) return;
 
-    final rawUrl = dotenv.env['API_URL'] ?? '';
-    final baseUrl = rawUrl.endsWith('/') ? rawUrl.substring(0, rawUrl.length - 1) : rawUrl;
+  // En Codespaces, la URL cambia. Reemplazá esto con tu URL real del puerto 8000.
+  // La encontrás en la pestaña "Ports" de VS Code → puerto 8000 → Forward Address
+  const baseUrl = 'https://turbo-system-v6rq95vvxwrgfpxqj-8000.app.github.dev';
 
-    print('[ApiService] FINAL BASE URL => $baseUrl');
+  print('[ApiService] FINAL BASE URL => $baseUrl');
 
-    _dio.options = BaseOptions(
-      baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-    );
+  _dio.options = BaseOptions(
+    baseUrl: baseUrl,
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 10),
+  );
 
-    _initialized = true;
-  }
+  _initialized = true;
+}
 
   /// Llama al backend para iniciar sesión y obtener el token JWT.
   Future<String> login(String email, String password) async {
