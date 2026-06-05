@@ -66,6 +66,9 @@ class ApiService {
     }
 
     _dio.options.baseUrl = resolved;
+     print(
+    '[ApiService] FINAL BASE URL => ${_dio.options.baseUrl}',
+    );
   }
 
   static String _resolveBaseUrl(String? envUrl) {
@@ -127,39 +130,60 @@ class ApiService {
   }
 
   /// Llama al backend para iniciar sesión y obtener el token JWT.
-  Future<String> login(String email, String password) async {
-    try {
-      print('[ApiService.login] 🔐 Attempting login for: $email');
-      print('[ApiService.login] Using baseUrl: ${_dio.options.baseUrl}');
-      final response = await _dio.post(
-        '/auth/login',
-        data: 'username=$email&password=$password',
-        options: Options(
-          contentType: Headers.formUrlEncodedContentType,
-        ),
-      );
+ /// Llama al backend para iniciar sesión y obtener el token JWT.
+Future<String> login(String email, String password) async {
+  try {
+    print('[ApiService.login] 🔐 Attempting login for: $email');
 
-      final data = response.data as Map<String, dynamic>;
-      final token = data['access_token'] as String?;
-      if (token == null || token.isEmpty) {
-        print('[ApiService.login] ❌ No access_token received from server');
-        throw Exception('No se recibió token del servidor.');
-      }
-      print('[ApiService.login] ✅ Login successful, token received');
-      return token;
-    } on DioError catch (error) {
-      print('[ApiService.login] ❌ DioError: ${error.message}');
-      print('[ApiService.login] Response status: ${error.response?.statusCode}');
-      print('[ApiService.login] Response data: ${error.response?.data}');
-      final serverMessage = error.response?.data?['detail'];
-      final message = serverMessage is String ? serverMessage : error.message;
-      throw Exception('Error de login: $message');
-    } catch (e) {
-      print('[ApiService.login] ❌ Unexpected error: $e');
-      rethrow;
+    print(
+      '[ApiService.login] BASE URL BEFORE REQUEST => ${_dio.options.baseUrl}',
+    );
+
+    print(
+      '[ApiService.login] FULL REQUEST URL => ${_dio.options.baseUrl}/auth/login',
+    );
+
+    final response = await _dio.post(
+      '/auth/login',
+      data: 'username=$email&password=$password',
+      options: Options(
+        contentType: Headers.formUrlEncodedContentType,
+      ),
+    );
+
+    final data = response.data as Map<String, dynamic>;
+    final token = data['access_token'] as String?;
+
+    if (token == null || token.isEmpty) {
+      print('[ApiService.login] ❌ No access_token received from server');
+      throw Exception('No se recibió token del servidor.');
     }
-  }
 
+    print('[ApiService.login] ✅ Login successful, token received');
+
+    return token;
+  } on DioError catch (error) {
+    print('[ApiService.login] ❌ DioError: ${error.message}');
+    print(
+      '[ApiService.login] REQUEST URL => ${error.requestOptions.uri}',
+    );
+    print(
+      '[ApiService.login] Response status: ${error.response?.statusCode}',
+    );
+    print(
+      '[ApiService.login] Response data: ${error.response?.data}',
+    );
+
+    final serverMessage = error.response?.data?['detail'];
+    final message =
+        serverMessage is String ? serverMessage : error.message;
+
+    throw Exception('Error de login: $message');
+  } catch (e) {
+    print('[ApiService.login] ❌ Unexpected error: $e');
+    rethrow;
+  }
+}
   /// Obtiene la lista de equipos para la compañía del usuario autenticado.
   Future<List<Equipment>> getEquipments() async {
     try {
