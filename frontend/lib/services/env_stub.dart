@@ -1,0 +1,1 @@
+String? getPlatformEnv(String key) => null;

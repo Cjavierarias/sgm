@@ -10,5 +10,5 @@ __pycache__/
 flutter-sdk/
 backend/.env
 frontend/.env
+frontend/web/.env
 mantenimiento-saas/
-
