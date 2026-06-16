@@ -11,14 +11,17 @@ from __future__ import annotations
 import os
 from typing import AsyncGenerator
 
+from pathlib import Path
+
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.models.base import Base
 
 
-# Cargar variables de entorno desde .env en la raíz del backend.
-load_dotenv()
+# Cargar .env desde la raíz del repositorio (un nivel arriba de /backend)
+_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+load_dotenv(dotenv_path=_ENV_FILE, override=False)
 
 
 DATABASE_URL = os.getenv("DATABASE_URL")

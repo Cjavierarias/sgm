@@ -22,8 +22,10 @@ from jose import JWTError, jwt
 import bcrypt
 
 
-# Cargar variables de entorno (opcional en producción si ya están definidas)
-load_dotenv()
+# Cargar .env desde la raíz del repositorio
+from pathlib import Path as _Path
+_ENV_FILE = _Path(__file__).resolve().parents[3] / ".env"
+load_dotenv(dotenv_path=_ENV_FILE, override=False)
 
 
 # SECRET_KEY es obligatoria en producción — falla el arranque si no está definida.
