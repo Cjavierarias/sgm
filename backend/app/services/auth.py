@@ -26,9 +26,20 @@ import bcrypt
 load_dotenv()
 
 
-# Configuración: puedes sobrescribir con variables de entorno
-SECRET_KEY: str = os.getenv("SECRET_KEY", "changeme-in-dev")
+# SECRET_KEY es obligatoria en producción — falla el arranque si no está definida.
+_raw_secret = os.getenv("SECRET_KEY")
+if not _raw_secret:
+    import sys
+    if os.getenv("ENVIRONMENT", "development") == "production":
+        raise RuntimeError(
+            "[SEGURIDAD] La variable SECRET_KEY es obligatoria en producción. "
+            "Definila en tu .env o en las variables de entorno del contenedor."
+        )
+    _raw_secret = "dev-only-insecure-key-change-me"  # Solo para desarrollo local
+
+SECRET_KEY: str = _raw_secret
 ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
+# Tokens cortos (60 min por defecto). Usar REFRESH_TOKEN en el futuro.
 ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
 

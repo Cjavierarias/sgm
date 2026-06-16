@@ -1,35 +1,31 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../config/app_config.dart';
 
-import '../models/equipment.dart';
-
+/// Servicio HTTP centralizado para comunicarse con el API SGM.
+///
+/// Usa [AppConfig.apiBaseUrl] como URL base (configurable via --dart-define).
+/// Maneja autenticación Bearer automáticamente con [setAuthToken].
 class ApiService {
   late final Dio _dio;
   bool _initialized = false;
-  
+
   ApiService() {
     _dio = Dio();
   }
-  
+
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
-
-    // En Codespaces, la URL cambia. Reemplazá esto con tu URL real del puerto 8000.
-    // La encontrás en la pestaña "Ports" de VS Code → puerto 8000 → Forward Address
-    const baseUrl = 'https://turbo-system-v6rq95vvxwrgfpxqj-8000.app.github.dev';
-
-    print('[ApiService] FINAL BASE URL => $baseUrl');
-
     _dio.options = BaseOptions(
-      baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      baseUrl: AppConfig.apiBaseUrl,
+      connectTimeout:
+          const Duration(seconds: AppConfig.connectTimeoutSeconds),
+      receiveTimeout:
+          const Duration(seconds: AppConfig.receiveTimeoutSeconds),
+      headers: {'Accept': 'application/json'},
     );
-
     _initialized = true;
   }
 
-  /// Establece el token de autenticación para las solicitudes futuras.
   void setAuthToken(String? token) {
     if (token == null || token.isEmpty) {
       _dio.options.headers.remove('Authorization');
@@ -38,90 +34,233 @@ class ApiService {
     }
   }
 
-  /// Llama al backend para iniciar sesión y obtener el token JWT.
+  /// Extrae el mensaje de error de una DioException y lanza Exception.
+  Never _handleDioError(DioException e) {
+    final detail = e.response?.data;
+    String msg;
+    if (detail is Map) {
+      msg = detail['detail']?.toString() ?? 'Error del servidor';
+    } else if (detail is String) {
+      msg = detail;
+    } else if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout) {
+      msg = 'Tiempo de conexión agotado. Verificá tu red.';
+    } else if (e.type == DioExceptionType.connectionError) {
+      msg = 'No se pudo conectar al servidor.';
+    } else {
+      msg = 'Error de red: ${e.message}';
+    }
+    throw Exception(msg);
+  }
+
+  // ─── AUTH ────────────────────────────────────────────────────────────────
+
   Future<String> login(String email, String password) async {
     await _ensureInitialized();
-
     try {
-      print('[ApiService.login] 🔐 Attempting login for: $email');
-      print('[ApiService.login] BASE URL BEFORE REQUEST => ${_dio.options.baseUrl}');
-      print('[ApiService.login] FULL REQUEST URL => ${_dio.options.baseUrl}/auth/login');
-
       final response = await _dio.post(
         '/auth/login',
         data: 'username=$email&password=$password',
-        options: Options(
-          contentType: Headers.formUrlEncodedContentType,
-        ),
+        options: Options(contentType: Headers.formUrlEncodedContentType),
       );
-
-      final data = response.data as Map<String, dynamic>;
-      final token = data['access_token'] as String?;
-
-      if (token == null || token.isEmpty) {
-        print('[ApiService.login] ❌ No access_token received from server');
-        throw Exception('No se recibió token del servidor.');
-      }
-
-      print('[ApiService.login] ✅ Login successful, token received');
+      final token = response.data['access_token'] as String?;
+      if (token == null || token.isEmpty) throw Exception('No se recibió token');
       return token;
-
-    } on DioException catch (error) {
-      print('[ApiService.login] ❌ DioException: ${error.message}');
-      print('[ApiService.login] REQUEST URL => ${error.requestOptions.uri}');
-      print('[ApiService.login] Response status: ${error.response?.statusCode}');
-      print('[ApiService.login] Response data: ${error.response?.data}');
-
-      final serverMessage = error.response?.data?['detail'];
-      final message = serverMessage is String ? serverMessage : error.message;
-      throw Exception('Error de login: $message');
-
-    } catch (e) {
-      print('[ApiService.login] ❌ Unexpected error: $e');
-      rethrow;
+    } on DioException catch (e) {
+      _handleDioError(e);
     }
   }
 
-  /// Obtiene la información del usuario actual.
   Future<Map<String, dynamic>> getCurrentUser() async {
     await _ensureInitialized();
-
-    try {
-      final response = await _dio.get('/auth/me');
-      return response.data as Map<String, dynamic>;
-    } on DioException catch (error) {
-      final serverMessage = error.response?.data?['detail'];
-      final message = serverMessage is String ? serverMessage : error.message;
-      throw Exception('Error al obtener usuario: $message');
-    }
+    final r = await _dio.get('/auth/me');
+    return r.data as Map<String, dynamic>;
   }
 
-  /// Obtiene la lista de equipos de la empresa.
-  Future<List<Equipment>> getEquipments() async {
+  Future<List<Map<String, dynamic>>> getUsers(
+      {int skip = 0, int limit = 100}) async {
     await _ensureInitialized();
-
-    try {
-      final response = await _dio.get('/equipments');
-      final List<dynamic> data = response.data as List<dynamic>;
-      return data.map((json) => Equipment.fromJson(json as Map<String, dynamic>)).toList();
-    } on DioException catch (error) {
-      final serverMessage = error.response?.data?['detail'];
-      final message = serverMessage is String ? serverMessage : error.message;
-      throw Exception('Error al obtener equipos: $message');
-    }
+    final r = await _dio.get('/auth/users',
+        queryParameters: {'skip': skip, 'limit': limit});
+    return (r.data as List).cast<Map<String, dynamic>>();
   }
 
-  /// Obtiene un equipo por su ID.
-  Future<Equipment> getEquipmentById(int equipmentId) async {
+  Future<Map<String, dynamic>> createUser(Map<String, dynamic> data) async {
     await _ensureInitialized();
+    final r = await _dio.post('/auth/users', data: data);
+    return r.data as Map<String, dynamic>;
+  }
 
+  Future<Map<String, dynamic>> updateUserRoles(
+      int userId, List<String> roles) async {
+    await _ensureInitialized();
+    final r = await _dio
+        .put('/auth/users/$userId/roles', data: {'roles': roles});
+    return r.data as Map<String, dynamic>;
+  }
+
+  // ─── DASHBOARD ───────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getDashboardSummary() async {
+    await _ensureInitialized();
+    final r = await _dio.get('/dashboard/summary');
+    return r.data as Map<String, dynamic>;
+  }
+
+  // ─── WORK ORDERS ─────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getWorkOrders(
+      {int skip = 0, int limit = 100}) async {
+    await _ensureInitialized();
+    final r = await _dio.get('/work-orders/',
+        queryParameters: {'skip': skip, 'limit': limit});
+    return (r.data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> getWorkOrder(int id) async {
+    await _ensureInitialized();
+    final r = await _dio.get('/work-orders/$id');
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> createWorkOrder(
+      Map<String, dynamic> data) async {
+    await _ensureInitialized();
+    final r = await _dio.post('/work-orders/', data: data);
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateWorkOrder(
+      int id, Map<String, dynamic> data) async {
+    await _ensureInitialized();
+    final r = await _dio.put('/work-orders/$id', data: data);
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<void> updateWorkOrderStatus(int id, String status,
+      {String? comment}) async {
+    await _ensureInitialized();
+    await _dio.put('/work-orders/$id/status',
+        data: {'status': status, 'comment': comment});
+  }
+
+  Future<Map<String, dynamic>> addWorkOrderComment(
+      int id, String content) async {
+    await _ensureInitialized();
+    final r =
+        await _dio.post('/work-orders/$id/comments', data: {'content': content});
+    return r.data as Map<String, dynamic>;
+  }
+
+  // ─── EQUIPMENTS ──────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getEquipments(
+      {int skip = 0, int limit = 200}) async {
+    await _ensureInitialized();
+    final r = await _dio.get('/equipments',
+        queryParameters: {'skip': skip, 'limit': limit});
+    return (r.data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> getEquipment(int id) async {
+    await _ensureInitialized();
+    final r = await _dio.get('/equipments/$id');
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> createEquipment(
+      Map<String, dynamic> data) async {
+    await _ensureInitialized();
+    final r = await _dio.post('/equipments', data: data);
+    return r.data as Map<String, dynamic>;
+  }
+
+  // ─── NOTIFICATIONS ───────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getNotifications() async {
+    await _ensureInitialized();
+    final r = await _dio.get('/notifications/');
+    return (r.data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<void> markNotificationRead(int id) async {
+    await _ensureInitialized();
+    await _dio.put('/notifications/$id/read');
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    await _ensureInitialized();
+    await _dio.put('/notifications/read-all');
+  }
+
+
+  // ─── SPARE PARTS ─────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getSpareParts(
+      {bool lowStockOnly = false}) async {
+    await _ensureInitialized();
+    final r = await _dio.get('/spare-parts/',
+        queryParameters: lowStockOnly ? {'low_stock_only': true} : null);
+    return (r.data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> getSparePart(int id) async {
+    await _ensureInitialized();
+    final r = await _dio.get('/spare-parts/$id');
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> createSparePart(
+      Map<String, dynamic> data) async {
+    await _ensureInitialized();
     try {
-      final response = await _dio.get('/equipments/$equipmentId');
-      return Equipment.fromJson(response.data as Map<String, dynamic>);
-    } on DioException catch (error) {
-      final serverMessage = error.response?.data?['detail'];
-      final message = serverMessage is String ? serverMessage : error.message;
-      throw Exception('Error al obtener equipo: $message');
+      final r = await _dio.post('/spare-parts/', data: data);
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
     }
+  }
+  Future<Map<String, dynamic>> sparePartEntry(
+      int id, double qty, String? notes) async {
+    await _ensureInitialized();
+    final r = await _dio.post('/spare-parts/$id/entry',
+        data: {'quantity': qty, if (notes != null && notes.isNotEmpty) 'notes': notes});
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> sparePartExit(
+      int id, double qty, String? notes) async {
+    await _ensureInitialized();
+    final r = await _dio.post('/spare-parts/$id/exit',
+        data: {'quantity': qty, if (notes != null && notes.isNotEmpty) 'notes': notes});
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<List<Map<String, dynamic>>> getSparePartRequests() async {
+    await _ensureInitialized();
+    final r = await _dio.get('/spare-part-requests/');
+    return (r.data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> createSparePartRequest(
+      Map<String, dynamic> data) async {
+    await _ensureInitialized();
+    final r = await _dio.post('/spare-part-requests/', data: data);
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<void> approveSparePartRequest(int id) async {
+    await _ensureInitialized();
+    await _dio.put('/spare-part-requests/$id/approve');
+  }
+
+  Future<void> deliverSparePartRequest(int id) async {
+    await _ensureInitialized();
+    await _dio.put('/spare-part-requests/$id/deliver');
+  }
+
+  Future<void> rejectSparePartRequest(int id) async {
+    await _ensureInitialized();
+    await _dio.put('/spare-part-requests/$id/reject');
   }
 }

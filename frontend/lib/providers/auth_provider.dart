@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../models/equipment.dart';
 import '../services/api_service.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -9,26 +7,40 @@ class AuthProvider extends ChangeNotifier {
 
   String _token = '';
   String _email = '';
+  String _fullName = '';
   int? _companyId;
+  List<String> _roles = [];
   bool _isLoading = false;
   String _errorMessage = '';
 
   String get token => _token;
   String get email => _email;
+  String get fullName => _fullName;
   int? get companyId => _companyId;
+  List<String> get roles => _roles;
   bool get isLoading => _isLoading;
   String get errorMessage => _errorMessage;
   bool get isAuthenticated => _token.isNotEmpty;
+
+  // Helpers de roles
+  bool get isAdmin => _roles.contains('admin');
+  bool get isMaintenanceManager => _roles.contains('maintenance_manager');
+  bool get isTechnician => _roles.contains('technician');
+  bool get isWarehouse => _roles.contains('warehouse');
+  bool get isPurchasing => _roles.contains('purchasing');
+  bool get isHR => _roles.contains('hr');
+
+  bool hasRole(String role) => _roles.contains(role);
+  bool hasAnyRole(List<String> checkRoles) =>
+      checkRoles.any((r) => _roles.contains(r));
 
   AuthProvider() {
     _apiService.setAuthToken(_token);
   }
 
-  /// Inicia sesión y guarda el token en almacenamiento local.
   Future<void> login(String email, String password) async {
     _setLoading(true);
     _setError('');
-
     try {
       final token = await _apiService.login(email, password);
       _token = token;
@@ -43,7 +55,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Limpia el estado de autenticación y el token guardado.
   Future<void> logout() async {
     _clearAuth();
     final prefs = await SharedPreferences.getInstance();
@@ -51,20 +62,16 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Recarga el token guardado y verifica si sigue siendo válido.
   Future<void> refreshToken() async {
     _setLoading(true);
     final prefs = await SharedPreferences.getInstance();
     final storedToken = prefs.getString('auth_token') ?? '';
-
     if (storedToken.isEmpty) {
       _setLoading(false);
       return;
     }
-
     _token = storedToken;
     _apiService.setAuthToken(_token);
-
     try {
       await _loadUserInfo();
     } catch (_) {
@@ -77,24 +84,15 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _loadUserInfo() async {
     final userData = await _apiService.getCurrentUser();
     _email = userData['email'] as String? ?? '';
+    _fullName = userData['full_name'] as String? ?? _email;
     _companyId = userData['company_id'] is int
         ? userData['company_id'] as int
         : int.tryParse(userData['company_id']?.toString() ?? '');
+    final rolesRaw = userData['roles'];
+    if (rolesRaw is List) {
+      _roles = rolesRaw.map((r) => r.toString()).toList();
+    }
     notifyListeners();
-  }
-
-  Future<List<Equipment>> fetchEquipments() async {
-    if (!isAuthenticated) {
-      throw Exception('Usuario no autenticado');
-    }
-    return _apiService.getEquipments();
-  }
-
-  Future<Equipment> fetchEquipmentById(int equipmentId) async {
-    if (!isAuthenticated) {
-      throw Exception('Usuario no autenticado');
-    }
-    return _apiService.getEquipmentById(equipmentId);
   }
 
   Future<void> _saveToken(String token) async {
@@ -115,8 +113,12 @@ class AuthProvider extends ChangeNotifier {
   void _clearAuth() {
     _token = '';
     _email = '';
+    _fullName = '';
     _companyId = null;
+    _roles = [];
     _errorMessage = '';
     _apiService.setAuthToken(null);
   }
+
+  ApiService get apiService => _apiService;
 }

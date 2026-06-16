@@ -1,49 +1,75 @@
-"""
-Punto de entrada de la API FastAPI.
-
-Este archivo configura la aplicación, registra routers y define un healthcheck.
-"""
+"""Punto de entrada principal de la API SGM — BSA Consultora."""
 from __future__ import annotations
+
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from sqlalchemy import text
 
 from app.database import engine
 from app.models.base import Base
 from app.routers.auth import router as auth_router
-from app.routers.equipments import router as equipments_router
+from app.routers.work_orders import router as wo_router
+from app.routers.equipments import router as eq_router
+from app.routers.notifications import router as notif_router
+from app.routers.dashboard import router as dashboard_router
+from app.routers.spare_parts import router as sp_router
+from app.routers.spare_parts import requests_router as sp_req_router
 
+# ─── Rate limiter global ───────────────────────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address)
 
-app = FastAPI(title="SGM API", version="0.1.0")
+# ─── CORS: orígenes permitidos desde variable de entorno ──────────────────────
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:8080,http://localhost:3000")
+ALLOWED_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
-# CORS para permitir que el frontend Flutter consuma la API desde otros orígenes.
-# En producción deberías restringir `allow_origins` a los dominios de tu app.
+app = FastAPI(
+    title="SGM API — BSA Consultora",
+    version="2.2.0",
+    description="Sistema de Gestión de Mantenimiento Industrial",
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+
+# Rate limiter handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
 )
+
+UPLOAD_DIR = "/tmp/sgm_uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    """Evento de arranque que verifica que la base de datos responde correctamente y crea tablas en desarrollo."""
-    async with engine.begin() as connection:
-        # Verificar conexión
-        await connection.execute(text("SELECT 1"))
-        # Crear tablas si no existen (útil en desarrollo/local)
-        await connection.run_sync(Base.metadata.create_all)
+    async with engine.begin() as conn:
+        await conn.execute(text("SELECT 1"))
+        await conn.run_sync(Base.metadata.create_all)
 
 
-# Registrar routers existentes.
 app.include_router(auth_router)
-app.include_router(equipments_router)
+app.include_router(wo_router)
+app.include_router(eq_router)
+app.include_router(notif_router)
+app.include_router(dashboard_router)
+app.include_router(sp_router)
+app.include_router(sp_req_router)
 
 
 @app.get("/health")
-async def health_check() -> dict[str, str]:
-    """Healthcheck usado por Docker y Nginx para validar que la API está viva."""
-    return {"status": "ok"}
+async def health():
+    return {"status": "ok", "version": "2.1.0"}
