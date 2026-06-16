@@ -78,6 +78,11 @@ class UserOut(BaseModel):
 
     @classmethod
     def from_orm_with_roles(cls, user: User) -> "UserOut":
+        # Siempre convertir a string para que el frontend reciba ["admin", ...]
+        def _role_str(r) -> str:
+            if hasattr(r, 'value'):
+                return r.value
+            return str(r)
         return cls(
             id=user.id,
             email=user.email,
@@ -86,7 +91,7 @@ class UserOut(BaseModel):
             position=user.position,
             company_id=user.company_id,
             is_active=user.is_active,
-            roles=[ur.role for ur in user.user_roles],
+            roles=[_role_str(ur.role) for ur in user.user_roles],
         )
 
 
@@ -116,7 +121,11 @@ async def get_current_user(
 def require_roles(*allowed_roles: str):
     """Dependency factory: exige que el usuario tenga al menos uno de los roles indicados."""
     async def checker(current_user: User = Depends(get_current_user)) -> User:
-        user_roles = [ur.role for ur in current_user.user_roles]
+        # Normalizar siempre a string para comparar correctamente con el enum
+        user_roles = [
+            ur.role.value if hasattr(ur.role, 'value') else str(ur.role)
+            for ur in current_user.user_roles
+        ]
         if not any(r in user_roles for r in allowed_roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -200,6 +209,28 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
 @router.get("/me", response_model=UserOut)
 async def me(current_user: User = Depends(get_current_user)):
     return UserOut.from_orm_with_roles(current_user)
+
+
+@router.get("/me/debug")
+async def me_debug(current_user: User = Depends(get_current_user)):
+    """Endpoint de diagnóstico: muestra roles en formato raw para detectar problemas."""
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "is_active": current_user.is_active,
+        "raw_roles": [
+            {
+                "role_raw": str(ur.role),
+                "role_type": type(ur.role).__name__,
+                "role_value": ur.role.value if hasattr(ur.role, 'value') else str(ur.role),
+            }
+            for ur in current_user.user_roles
+        ],
+        "roles_normalized": [
+            ur.role.value if hasattr(ur.role, 'value') else str(ur.role)
+            for ur in current_user.user_roles
+        ],
+    }
 
 
 @router.get("/users", response_model=List[UserOut])
