@@ -30,9 +30,9 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":%FRONTEND_PORT% " 2^>nul') 
 )
 echo    Puertos liberados.
 
-:: ── 2. Iniciar Backend FastAPI en nueva terminal ──────────────
-echo [2/4] Iniciando Backend FastAPI (puerto %BACKEND_PORT%)...
-start "SGM Backend" cmd /k "title SGM Backend ^& call %CONDA%\Scripts\activate.bat sgm ^& cd /d %ROOT%backend ^& echo Backend iniciando... ^& uvicorn app.main:app --reload --host 0.0.0.0 --port %BACKEND_PORT%"
+:: ── 2. Instalar dependencias e iniciar Backend ───────────────
+echo [2/4] Instalando dependencias e iniciando Backend FastAPI (puerto %BACKEND_PORT%)...
+start "SGM Backend" cmd /k "title SGM Backend ^& call %CONDA%\Scripts\activate.bat sgm ^& cd /d %ROOT%backend ^& echo Instalando dependencias... ^& pip install -r requirements.txt -q ^& echo Backend iniciando... ^& uvicorn app.main:app --reload --host 0.0.0.0 --port %BACKEND_PORT%"
 
 :: Esperar a que el backend levante
 echo    Esperando que el backend este listo...
