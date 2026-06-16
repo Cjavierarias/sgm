@@ -33,6 +33,12 @@ const _allNavItems = [
     allowedRoles: [],
   ),
   _NavItem(
+    label: 'Planificación',
+    icon: Icons.calendar_month_rounded,
+    route: '/planning',
+    allowedRoles: ['admin', 'maintenance_manager', 'technician'],
+  ),
+  _NavItem(
     label: 'Equipos',
     icon: Icons.precision_manufacturing_rounded,
     route: '/equipments',
@@ -43,6 +49,12 @@ const _allNavItems = [
     icon: Icons.inventory_2_rounded,
     route: '/spare-parts',
     allowedRoles: ['admin', 'maintenance_manager', 'technician', 'warehouse', 'purchasing'],
+  ),
+  _NavItem(
+    label: 'Compras',
+    icon: Icons.shopping_cart_rounded,
+    route: '/purchases',
+    allowedRoles: ['admin', 'purchasing', 'maintenance_manager'],
   ),
   _NavItem(
     label: 'Usuarios',

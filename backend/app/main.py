@@ -27,6 +27,8 @@ from app.routers.notifications import router as notif_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.spare_parts import router as sp_router
 from app.routers.spare_parts import requests_router as sp_req_router
+from app.routers.purchases import suppliers_router, po_router, invoices_router
+from app.routers.planning import router as planning_router
 
 # ─── Rate limiter global ───────────────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address)
@@ -74,6 +76,10 @@ app.include_router(notif_router)
 app.include_router(dashboard_router)
 app.include_router(sp_router)
 app.include_router(sp_req_router)
+app.include_router(suppliers_router)
+app.include_router(po_router)
+app.include_router(invoices_router)
+app.include_router(planning_router)
 
 
 @app.get("/health")

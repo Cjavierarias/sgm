@@ -263,4 +263,153 @@ class ApiService {
     await _ensureInitialized();
     await _dio.put('/spare-part-requests/$id/reject');
   }
+
+  // ─── SUPPLIERS ───────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getSuppliers() async {
+    await _ensureInitialized();
+    final r = await _dio.get('/suppliers/');
+    return (r.data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> createSupplier(Map<String, dynamic> data) async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio.post('/suppliers/', data: data);
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> updateSupplier(int id, Map<String, dynamic> data) async {
+    await _ensureInitialized();
+    final r = await _dio.put('/suppliers/$id', data: data);
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<void> deleteSupplier(int id) async {
+    await _ensureInitialized();
+    await _dio.delete('/suppliers/$id');
+  }
+
+  // ─── PURCHASE ORDERS ─────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getPurchaseOrders(
+      {String? status, int skip = 0, int limit = 100}) async {
+    await _ensureInitialized();
+    final r = await _dio.get('/purchase-orders/', queryParameters: {
+      if (status != null) 'status': status,
+      'skip': skip,
+      'limit': limit,
+    });
+    return (r.data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> getPurchaseOrder(int id) async {
+    await _ensureInitialized();
+    final r = await _dio.get('/purchase-orders/$id');
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> createPurchaseOrder(Map<String, dynamic> data) async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio.post('/purchase-orders/', data: data);
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  Future<void> updatePOStatus(int id, String status) async {
+    await _ensureInitialized();
+    await _dio.put('/purchase-orders/$id/status', data: {'status': status});
+  }
+
+  Future<Map<String, dynamic>> receivePurchaseOrder(
+      int id, List<Map<String, dynamic>> items) async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio
+          .post('/purchase-orders/$id/receive', data: {'items': items});
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  // ─── INVOICES ────────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getInvoices() async {
+    await _ensureInitialized();
+    final r = await _dio.get('/invoices/');
+    return (r.data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> createInvoice(Map<String, dynamic> data) async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio.post('/invoices/', data: data);
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  Future<void> payInvoice(int id) async {
+    await _ensureInitialized();
+    await _dio.put('/invoices/$id/pay');
+  }
+
+  // ─── MAINTENANCE PLANS ───────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getMaintenancePlans(
+      {bool activeOnly = false}) async {
+    await _ensureInitialized();
+    final r = await _dio.get('/maintenance-plans/', queryParameters: {
+      if (activeOnly) 'active_only': true,
+    });
+    return (r.data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> getUpcomingPlans({int days = 30}) async {
+    await _ensureInitialized();
+    final r = await _dio.get('/maintenance-plans/upcoming',
+        queryParameters: {'days': days});
+    return (r.data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> createMaintenancePlan(
+      Map<String, dynamic> data) async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio.post('/maintenance-plans/', data: data);
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> updateMaintenancePlan(
+      int id, Map<String, dynamic> data) async {
+    await _ensureInitialized();
+    final r = await _dio.put('/maintenance-plans/$id', data: data);
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<void> deleteMaintenancePlan(int id) async {
+    await _ensureInitialized();
+    await _dio.delete('/maintenance-plans/$id');
+  }
+
+  Future<Map<String, dynamic>> executeMaintenancePlan(int id,
+      {String? notes, double? actualHours}) async {
+    await _ensureInitialized();
+    final r = await _dio.post('/maintenance-plans/$id/execute', data: {
+      if (notes != null) 'notes': notes,
+      if (actualHours != null) 'actual_hours': actualHours,
+    });
+    return r.data as Map<String, dynamic>;
+  }
 }

@@ -14,6 +14,8 @@ import 'screens/equipments_screen.dart';
 import 'screens/users_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/spare_parts_screen.dart';
+import 'screens/purchases_screen.dart';
+import 'screens/planning_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -86,6 +88,14 @@ class MyApp extends StatelessWidget {
             GoRoute(
               path: '/spare-parts',
               builder: (_, __) => const SparePartsScreen(),
+            ),
+            GoRoute(
+              path: '/purchases',
+              builder: (_, __) => const PurchasesScreen(),
+            ),
+            GoRoute(
+              path: '/planning',
+              builder: (_, __) => const PlanningScreen(),
             ),
           ],
         ),
