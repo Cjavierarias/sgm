@@ -71,6 +71,42 @@ class ApiService {
     }
   }
 
+  /// Registra nueva empresa + admin. Devuelve el token para auto-login.
+  Future<void> register({
+    required String email,
+    required String password,
+    required String fullName,
+    required String companyName,
+  }) async {
+    await _ensureInitialized();
+    try {
+      await _dio.post('/auth/register', data: {
+        'email': email,
+        'password': password,
+        'full_name': fullName,
+        'company_name': companyName,
+      });
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  /// Login con Google usando el id_token obtenido por google_sign_in.
+  Future<String> loginWithGoogle(String idToken, {String? companyName}) async {
+    await _ensureInitialized();
+    try {
+      final response = await _dio.post('/auth/google', data: {
+        'id_token': idToken,
+        if (companyName != null) 'company_name': companyName,
+      });
+      final token = response.data['access_token'] as String?;
+      if (token == null || token.isEmpty) throw Exception('No se recibió token');
+      return token;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
   Future<Map<String, dynamic>> getCurrentUser() async {
     await _ensureInitialized();
     final r = await _dio.get('/auth/me');

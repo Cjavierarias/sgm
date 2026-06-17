@@ -324,7 +324,7 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
                 const SizedBox(height: 16),
               ],
-              // Botón
+              // Botón ingresar
               SizedBox(
                 height: 48,
                 child: auth.isLoading
@@ -340,24 +340,73 @@ class _LoginScreenState extends State<LoginScreen>
                         child: const Text('Ingresar'),
                       ),
               ),
-              const SizedBox(height: 24),
-              // Separador de versión
-              Row(
-                children: [
-                  const Expanded(child: Divider()),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      AppConfig.companyName,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: BsaTheme.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+              const SizedBox(height: 20),
+
+              // Separador "o"
+              Row(children: [
+                const Expanded(child: Divider()),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('o',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: BsaTheme.textSecondary.withOpacity(0.6))),
+                ),
+                const Expanded(child: Divider()),
+              ]),
+              const SizedBox(height: 16),
+
+              // Botón Google
+              SizedBox(
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: auth.isLoading ? null : _loginGoogle,
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: BsaTheme.border, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    backgroundColor: Colors.white,
                   ),
-                  const Expanded(child: Divider()),
-                ],
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Logo Google SVG inline como texto (compatible web)
+                      _GoogleIcon(),
+                      const SizedBox(width: 10),
+                      const Text(
+                        'Continuar con Google',
+                        style: TextStyle(
+                          color: BsaTheme.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Ir a registro
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                const Text('¿No tenés cuenta?',
+                    style: TextStyle(
+                        fontSize: 13, color: BsaTheme.textSecondary)),
+                TextButton(
+                  onPressed: () => context.go('/register'),
+                  child: const Text('Registrá tu empresa',
+                      style: TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600)),
+                ),
+              ]),
+
+              const SizedBox(height: 8),
+              // Versión
+              Text(
+                AppConfig.companyName,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 11, color: BsaTheme.textSecondary),
               ),
             ],
           ),
@@ -365,6 +414,62 @@ class _LoginScreenState extends State<LoginScreen>
       ),
     );
   }
+
+  Future<void> _loginGoogle() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    try {
+      await auth.loginWithGoogle();
+      if (auth.isAuthenticated && mounted) {
+        context.go('/dashboard');
+      }
+    } catch (_) {
+      // error ya está en auth.errorMessage
+    }
+  }
+}
+
+/// Ícono de Google dibujado con Canvas (sin dependencia de imagen externa)
+class _GoogleIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: CustomPaint(painter: _GooglePainter()),
+    );
+  }
+}
+
+class _GooglePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width;
+    // Simplificado: letras G en color Google
+    final paint = Paint()..style = PaintingStyle.fill;
+
+    // Rojo
+    paint.color = const Color(0xFFEA4335);
+    canvas.drawArc(Rect.fromLTWH(0, 0, s, s), -0.52, 1.57, true, paint);
+
+    // Amarillo
+    paint.color = const Color(0xFFFBBC05);
+    canvas.drawArc(Rect.fromLTWH(0, 0, s, s), 1.05, 1.57, true, paint);
+
+    // Verde
+    paint.color = const Color(0xFF34A853);
+    canvas.drawArc(Rect.fromLTWH(0, 0, s, s), 2.62, 1.57, true, paint);
+
+    // Azul
+    paint.color = const Color(0xFF4285F4);
+    canvas.drawArc(Rect.fromLTWH(0, 0, s, s), -2.09, 1.57, true, paint);
+
+    // Círculo blanco del centro
+    paint.color = Colors.white;
+    canvas.drawCircle(Offset(s / 2, s / 2), s * 0.35, paint);
+  }
+
+  @override
+  bool shouldRepaint(_) => false;
 }
 
 /// Logo BSA: icono de engranaje con acento verde

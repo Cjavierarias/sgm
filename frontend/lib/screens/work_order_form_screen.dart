@@ -12,10 +12,12 @@ class _WorkOrderFormScreenState extends State<WorkOrderFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
+  final _hoursCtrl = TextEditingController();
   String _priority = 'medium';
   String _type = 'corrective';
   int? _equipmentId;
   int? _assignedToId;
+  DateTime? _dueDate;
   List<Map<String, dynamic>> _equipments = [];
   List<Map<String, dynamic>> _users = [];
   bool _loading = false;
@@ -51,6 +53,9 @@ class _WorkOrderFormScreenState extends State<WorkOrderFormScreen> {
         'wo_type': _type,
         if (_equipmentId != null) 'equipment_id': _equipmentId,
         if (_assignedToId != null) 'assigned_to_id': _assignedToId,
+        if (_dueDate != null) 'due_date': _dueDate!.toIso8601String(),
+        if (_hoursCtrl.text.isNotEmpty)
+          'estimated_hours': double.tryParse(_hoursCtrl.text),
       });
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -134,6 +139,40 @@ class _WorkOrderFormScreenState extends State<WorkOrderFormScreen> {
                                     child: Text(u['full_name'] as String? ?? u['email'] as String? ?? ''))),
                               ],
                               onChanged: (v) => setState(() => _assignedToId = v),
+                            ),
+                            const SizedBox(height: 12),
+                            // Fecha límite
+                            InkWell(
+                              onTap: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: _dueDate ?? DateTime.now().add(const Duration(days: 7)),
+                                  firstDate: DateTime.now(),
+                                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                                );
+                                if (picked != null) setState(() => _dueDate = picked);
+                              },
+                              child: InputDecorator(
+                                decoration: const InputDecoration(
+                                  labelText: 'Fecha límite (opcional)',
+                                  suffixIcon: Icon(Icons.calendar_today),
+                                ),
+                                child: Text(
+                                  _dueDate != null
+                                      ? '${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}'
+                                      : 'Seleccionar fecha',
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _hoursCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Horas estimadas (opcional)',
+                                suffixText: 'hs',
+                              ),
+                              keyboardType: TextInputType.number,
                             ),
                           ],
                         ),

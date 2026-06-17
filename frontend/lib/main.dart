@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'config/app_config.dart';
 import 'providers/auth_provider.dart';
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/work_orders_screen.dart';
@@ -49,13 +50,19 @@ class MyApp extends StatelessWidget {
         final loggedIn = auth.isAuthenticated;
         final loggingIn = state.matchedLocation == '/login';
         if (!loggedIn && !loggingIn) return '/login';
+        final registering = state.matchedLocation == '/register';
         if (loggedIn && loggingIn) return '/dashboard';
+        if (!loggedIn && registering) return null;
         return null;
       },
       routes: [
         GoRoute(
           path: '/login',
           builder: (_, __) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: '/register',
+          builder: (_, __) => const RegisterScreen(),
         ),
         ShellRoute(
           builder: (context, state, child) => MainShell(child: child),

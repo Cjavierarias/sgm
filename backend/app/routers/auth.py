@@ -4,18 +4,22 @@ Router de autenticación con soporte de múltiples roles.
 Endpoints:
 - POST /auth/login
 - POST /auth/register
+- POST /auth/google           (Google OAuth login/register)
 - GET  /auth/me
-- POST /auth/users          (Admin: crear usuario en la empresa)
-- GET  /auth/users          (Admin: listar usuarios)
+- GET  /auth/me/debug
+- POST /auth/users            (Admin: crear usuario en la empresa)
+- GET  /auth/users            (Admin: listar usuarios)
 - PUT  /auth/users/{id}/roles (Admin/HR: asignar roles)
-- PUT  /auth/users/{id}     (Admin/HR: editar usuario)
-- DELETE /auth/users/{id}   (Admin: desactivar usuario)
+- PUT  /auth/users/{id}       (Admin/HR: editar usuario)
+- DELETE /auth/users/{id}     (Admin: desactivar usuario)
 """
 from __future__ import annotations
 
+import os
 from datetime import timedelta
 from typing import List, Optional
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel, EmailStr
@@ -30,6 +34,8 @@ limiter = Limiter(key_func=get_remote_address)
 from app.database import get_db
 from app.models.base import Company, RoleName, User, UserRole
 from app.services import auth as auth_service
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -359,3 +365,99 @@ async def update_user(
     )
     user = result.scalars().first()
     return UserOut.from_orm_with_roles(user)
+
+
+# ─── Google OAuth ─────────────────────────────────────────────────────────────
+
+class GoogleAuthRequest(BaseModel):
+    id_token: str                        # Token que envía Flutter tras google_sign_in
+    company_name: Optional[str] = None   # Solo si es registro nuevo
+
+
+@router.post("/google", response_model=TokenResponse)
+@limiter.limit("20/minute")
+async def google_auth(
+    request: Request,
+    payload: GoogleAuthRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Valida el id_token de Google y:
+    - Si el usuario ya existe → hace login.
+    - Si es nuevo → registra empresa + usuario admin automáticamente.
+    """
+    # ── 1. Verificar token con Google ────────────────────────────────────────
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"id_token": payload.id_token},
+            timeout=10,
+        )
+
+    if resp.status_code != 200:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de Google inválido o expirado",
+        )
+
+    google_data = resp.json()
+
+    # Verificar audience si está configurado
+    if GOOGLE_CLIENT_ID and google_data.get("aud") != GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de Google no corresponde a esta aplicación",
+        )
+
+    email: str = google_data.get("email", "").lower().strip()
+    full_name: str = google_data.get("name", "")
+    if not email:
+        raise HTTPException(status_code=400, detail="No se pudo obtener email de Google")
+
+    # ── 2. Buscar usuario existente → login ──────────────────────────────────
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.user_roles))
+        .where(User.email == email, User.is_active == True)
+    )
+    user = result.scalars().first()
+
+    if user:
+        roles = [ur.role.value if hasattr(ur.role, 'value') else str(ur.role) for ur in user.user_roles]
+        token = auth_service.create_access_token({
+            "sub": str(user.id),
+            "company_id": str(user.company_id),
+            "roles": roles,
+        })
+        return {"access_token": token, "token_type": "bearer"}
+
+    # ── 3. Usuario nuevo → crear empresa + admin ─────────────────────────────
+    company = Company(name=payload.company_name or f"Empresa de {full_name or email}")
+    db.add(company)
+    await db.flush()
+
+    hashed = auth_service.get_password_hash(f"google_oauth_{email}")
+    new_user = User(
+        email=email,
+        full_name=full_name,
+        hashed_password=hashed,
+        company_id=company.id,
+        is_active=True,
+    )
+    db.add(new_user)
+    await db.flush()
+
+    db.add(UserRole(user_id=new_user.id, role=RoleName.admin))
+    await db.commit()
+
+    result = await db.execute(
+        select(User).options(selectinload(User.user_roles)).where(User.id == new_user.id)
+    )
+    user = result.scalars().first()
+    roles = [ur.role.value if hasattr(ur.role, 'value') else str(ur.role) for ur in user.user_roles]
+    token = auth_service.create_access_token({
+        "sub": str(user.id),
+        "company_id": str(user.company_id),
+        "roles": roles,
+    })
+    return {"access_token": token, "token_type": "bearer"}

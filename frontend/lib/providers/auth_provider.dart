@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 
@@ -43,6 +44,41 @@ class AuthProvider extends ChangeNotifier {
     _setError('');
     try {
       final token = await _apiService.login(email, password);
+      _token = token;
+      _apiService.setAuthToken(_token);
+      await _saveToken(_token);
+      await _loadUserInfo();
+    } catch (error) {
+      _setError(error.toString().replaceFirst('Exception: ', ''));
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Login / registro con Google Sign-In.
+  Future<void> loginWithGoogle({String? companyName}) async {
+    _setLoading(true);
+    _setError('');
+    try {
+      final googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+      );
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        _setError('Inicio de sesión cancelado');
+        return;
+      }
+      final auth = await account.authentication;
+      final idToken = auth.idToken;
+      if (idToken == null) {
+        _setError('No se pudo obtener token de Google');
+        return;
+      }
+      final token = await _apiService.loginWithGoogle(
+        idToken,
+        companyName: companyName,
+      );
       _token = token;
       _apiService.setAuthToken(_token);
       await _saveToken(_token);
