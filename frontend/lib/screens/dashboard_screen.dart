@@ -54,7 +54,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               else if (_error.isNotEmpty)
                 _ErrorCard(error: _error, onRetry: _load)
               else if (_summary != null)
-                _SummaryCards(summary: _summary!),
+                _SummaryCards(summary: _summary!, auth: auth),
               const SizedBox(height: 28),
               _QuickActions(auth: auth),
             ],
@@ -145,63 +145,58 @@ class _Header extends StatelessWidget {
 
 class _SummaryCards extends StatelessWidget {
   final Map<String, dynamic> summary;
-  const _SummaryCards({required this.summary});
+  final AuthProvider auth;
+  const _SummaryCards({required this.summary, required this.auth});
 
   @override
   Widget build(BuildContext context) {
     final wo = summary['work_orders'] as Map<String, dynamic>? ?? {};
     final eq = summary['equipment'] as Map<String, dynamic>? ?? {};
 
-    final cards = [
-      _CardData(
-        label: 'OT Abiertas',
-        value: '${wo['open'] ?? 0}',
-        icon: Icons.folder_open_rounded,
-        color: BsaTheme.primary,
-        bgColor: const Color(0xFFE8F4FB),
-        route: '/work-orders',
-      ),
-      _CardData(
-        label: 'En Progreso',
-        value: '${wo['in_progress'] ?? 0}',
-        icon: Icons.build_rounded,
-        color: const Color(0xFFF59E0B),
-        bgColor: const Color(0xFFFFF8E8),
-        route: '/work-orders',
-      ),
-      _CardData(
-        label: 'Equipos Activos',
-        value: '${eq['operational'] ?? 0}',
-        icon: Icons.check_circle_rounded,
-        color: BsaTheme.secondary,
-        bgColor: const Color(0xFFE8F6EE),
-        route: '/equipments',
-      ),
-      _CardData(
-        label: 'En Mantenimiento',
-        value: '${eq['in_maintenance'] ?? 0}',
-        icon: Icons.precision_manufacturing_rounded,
-        color: const Color(0xFFEF4444),
-        bgColor: const Color(0xFFFEEAEA),
-        route: '/equipments',
-      ),
-      _CardData(
-        label: 'Stock Bajo',
-        value: '${summary['low_stock_parts'] ?? 0}',
-        icon: Icons.warning_amber_rounded,
-        color: const Color(0xFFD97706),
-        bgColor: const Color(0xFFFFF3E0),
-        route: '/spare-parts',
-      ),
-      _CardData(
-        label: 'Notificaciones',
-        value: '${summary['unread_notifications'] ?? 0}',
-        icon: Icons.notifications_active_rounded,
-        color: const Color(0xFF7C3AED),
-        bgColor: const Color(0xFFF0EAFB),
-        route: '/notifications',
-      ),
+    // Tarjetas base para todos
+    final allCards = <_CardData>[
+      _CardData(label: 'OT Abiertas', value: '${wo['open'] ?? 0}',
+          icon: Icons.folder_open_rounded, color: BsaTheme.primary,
+          bgColor: const Color(0xFFE8F4FB), route: '/work-orders'),
+      _CardData(label: 'En Progreso', value: '${wo['in_progress'] ?? 0}',
+          icon: Icons.build_rounded, color: const Color(0xFFF59E0B),
+          bgColor: const Color(0xFFFFF8E8), route: '/work-orders'),
+      _CardData(label: 'Esperando Repuestos', value: '${wo['waiting_parts'] ?? 0}',
+          icon: Icons.inventory_2_rounded, color: const Color(0xFFEF4444),
+          bgColor: const Color(0xFFFEEAEA), route: '/spare-parts'),
+      _CardData(label: 'Equipos Activos', value: '${eq['operational'] ?? 0}',
+          icon: Icons.check_circle_rounded, color: BsaTheme.secondary,
+          bgColor: const Color(0xFFE8F6EE), route: '/equipments'),
+      _CardData(label: 'En Mantenimiento', value: '${eq['in_maintenance'] ?? 0}',
+          icon: Icons.precision_manufacturing_rounded, color: const Color(0xFFD97706),
+          bgColor: const Color(0xFFFFF3E0), route: '/equipments'),
+      _CardData(label: 'Stock Bajo', value: '${summary['low_stock_parts'] ?? 0}',
+          icon: Icons.warning_amber_rounded, color: const Color(0xFFD97706),
+          bgColor: const Color(0xFFFFF3E0), route: '/spare-parts'),
+      _CardData(label: 'Notificaciones', value: '${summary['unread_notifications'] ?? 0}',
+          icon: Icons.notifications_active_rounded, color: const Color(0xFF7C3AED),
+          bgColor: const Color(0xFFF0EAFB), route: '/notifications'),
     ];
+
+    // Filtrar tarjetas según rol
+    final List<_CardData> cards;
+    if (auth.isAdmin || auth.isMaintenanceManager) {
+      cards = allCards; // Admin y Jefe ven todo
+    } else if (auth.isTechnician) {
+      cards = allCards.where((c) =>
+          c.route == '/work-orders' || c.route == '/equipments' ||
+          c.route == '/notifications').toList();
+    } else if (auth.isWarehouse) {
+      cards = allCards.where((c) =>
+          c.label == 'Stock Bajo' || c.label == 'OT Abiertas' ||
+          c.label == 'Esperando Repuestos' || c.route == '/notifications').toList();
+    } else if (auth.isPurchasing) {
+      cards = allCards.where((c) =>
+          c.label == 'Stock Bajo' || c.label == 'OT Abiertas' ||
+          c.route == '/notifications').toList();
+    } else {
+      cards = allCards.take(4).toList(); // Viewer: primeras 4
+    }
 
     return GridView.builder(
       shrinkWrap: true,
@@ -332,47 +327,57 @@ class _QuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Acciones disponibles según el rol
+    final actions = <({String label, IconData icon, String route, Color? color})>[];
+
+    if (auth.hasAnyRole(['admin', 'maintenance_manager'])) {
+      actions.addAll([
+        (label: 'Nueva OT', icon: Icons.add_circle_outline_rounded, route: '/work-orders', color: BsaTheme.primary),
+        (label: 'Planificación', icon: Icons.calendar_month_rounded, route: '/planning', color: BsaTheme.secondary),
+        (label: 'Equipos', icon: Icons.precision_manufacturing_rounded, route: '/equipments', color: null),
+      ]);
+    }
+    if (auth.isTechnician) {
+      actions.addAll([
+        (label: 'Mis OT', icon: Icons.build_circle_rounded, route: '/work-orders', color: BsaTheme.primary),
+        (label: 'Pedir repuesto', icon: Icons.inventory_2_rounded, route: '/spare-parts', color: BsaTheme.secondary),
+      ]);
+    }
+    if (auth.isWarehouse) {
+      actions.addAll([
+        (label: 'Stock / Depósito', icon: Icons.inventory_2_rounded, route: '/spare-parts', color: BsaTheme.primary),
+        (label: 'Pedidos pendientes', icon: Icons.pending_actions_rounded, route: '/spare-parts', color: const Color(0xFFD97706)),
+      ]);
+    }
+    if (auth.isPurchasing) {
+      actions.addAll([
+        (label: 'Órdenes de Compra', icon: Icons.shopping_cart_rounded, route: '/purchases', color: BsaTheme.primary),
+        (label: 'Proveedores', icon: Icons.business_rounded, route: '/purchases', color: null),
+      ]);
+    }
+    if (auth.hasAnyRole(['admin', 'hr'])) {
+      actions.add((label: 'Gestionar usuarios', icon: Icons.people_rounded, route: '/users', color: null));
+    }
+    // Siempre visible
+    actions.add((label: 'Ver OT', icon: Icons.list_alt_rounded, route: '/work-orders', color: null));
+
+    if (actions.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Acciones rápidas',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-            color: BsaTheme.textPrimary,
-            letterSpacing: -0.2,
-          ),
-        ),
+        const Text('Acciones rápidas',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold,
+                color: BsaTheme.textPrimary, letterSpacing: -0.2)),
         const SizedBox(height: 12),
         Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            if (auth.hasAnyRole(['admin', 'maintenance_manager']))
-              _ActionButton(
-                label: 'Nueva OT',
-                icon: Icons.add_circle_outline_rounded,
-                onTap: () => context.go('/work-orders'),
-              ),
-            _ActionButton(
-              label: 'Ver OT',
-              icon: Icons.list_alt_rounded,
-              onTap: () => context.go('/work-orders'),
-            ),
-            if (auth.hasAnyRole(['admin', 'maintenance_manager']))
-              _ActionButton(
-                label: 'Equipos',
-                icon: Icons.precision_manufacturing_rounded,
-                onTap: () => context.go('/equipments'),
-              ),
-            if (auth.hasAnyRole(['admin', 'hr']))
-              _ActionButton(
-                label: 'Usuarios',
-                icon: Icons.people_rounded,
-                onTap: () => context.go('/users'),
-              ),
-          ],
+          spacing: 10,
+          runSpacing: 10,
+          children: actions.map((a) => _ActionButton(
+            label: a.label, icon: a.icon,
+            onTap: () => context.go(a.route),
+            color: a.color,
+          )).toList(),
         ),
       ],
     );

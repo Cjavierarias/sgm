@@ -143,8 +143,7 @@ class _SparePartsScreenState extends State<SparePartsScreen>
                 ),
               ],
             ),
-      floatingActionButton: _tabController.index == 1 &&
-              auth.hasAnyRole(['admin', 'maintenance_manager', 'technician'])
+      floatingActionButton: auth.hasAnyRole(['admin', 'maintenance_manager', 'technician'])
           ? FloatingActionButton.extended(
               onPressed: () async {
                 await _showRequestForm(context);
@@ -152,7 +151,7 @@ class _SparePartsScreenState extends State<SparePartsScreen>
               },
               icon: const Icon(Icons.add_shopping_cart_rounded),
               label: const Text('Pedir Repuesto'),
-              backgroundColor: const Color(0xFF1E3A5F),
+              backgroundColor: BsaTheme.primary,
             )
           : null,
     );
@@ -213,14 +212,31 @@ class _SparePartsScreenState extends State<SparePartsScreen>
             ElevatedButton(
               onPressed: () async {
                 if (selectedPartId == null) return;
-                final auth =
-                    Provider.of<AuthProvider>(context, listen: false);
-                await auth.apiService.createSparePartRequest({
-                  'spare_part_id': selectedPartId,
-                  'quantity': double.tryParse(qtyCtrl.text) ?? 1,
-                  if (notesCtrl.text.isNotEmpty) 'notes': notesCtrl.text,
-                });
-                if (ctx.mounted) Navigator.pop(ctx);
+                final qty = double.tryParse(qtyCtrl.text) ?? 0;
+                if (qty <= 0) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('Ingresá una cantidad válida')));
+                  return;
+                }
+                try {
+                  final auth = Provider.of<AuthProvider>(context, listen: false);
+                  await auth.apiService.createSparePartRequest({
+                    'spare_part_id': selectedPartId,
+                    'quantity': qty,
+                    if (notesCtrl.text.isNotEmpty) 'notes': notesCtrl.text,
+                  });
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  // Mostrar confirmación en la pantalla padre
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✅ Pedido enviado al depósito'),
+                      backgroundColor: BsaTheme.secondary,
+                    ),
+                  );
+                } catch (e) {
+                  if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(content: Text('Error: $e')));
+                }
               },
               child: const Text('Enviar Pedido'),
             ),

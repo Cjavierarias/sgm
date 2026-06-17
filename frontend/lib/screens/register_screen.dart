@@ -52,22 +52,28 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
     setState(() { _loading = true; _error = ''; });
     try {
       final auth = Provider.of<AuthProvider>(context, listen: false);
-      // Registrar empresa vía /auth/register
+      // Paso 1: Registrar empresa + admin
       await auth.apiService.register(
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
         fullName: _nameCtrl.text.trim(),
         companyName: _companyCtrl.text.trim(),
       );
-      // Auto-login tras registro
+      // Paso 2: Auto-login con las mismas credenciales
       await auth.login(_emailCtrl.text.trim(), _passCtrl.text);
-      if (mounted) context.go('/dashboard');
+      if (mounted && auth.isAuthenticated) {
+        context.go('/dashboard');
+      }
     } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = msg.contains('registrado')
+            ? 'Ese email ya tiene una cuenta. Usá "Iniciar sesión".'
+            : msg;
       });
     } finally {
       if (mounted) setState(() => _loading = false);

@@ -121,28 +121,39 @@ class _PlanningScreenState extends State<PlanningScreen>
   }
 
   Future<void> _showPlanForm(BuildContext context, {Map<String, dynamic>? plan}) async {
-    int? equipmentId = plan?['equipment_id'] as int?;
-    final titleCtrl = TextEditingController(text: plan?['title'] ?? '');
-    final descCtrl = TextEditingController(text: plan?['description'] ?? '');
-    String frequency = plan?['frequency'] ?? 'monthly';
-    final freqValueCtrl = TextEditingController(text: '${plan?['frequency_value'] ?? 1}');
-    DateTime? nextDue = plan?['next_due'] != null
-        ? DateTime.tryParse(plan!['next_due'] as String)
-        : DateTime.now().add(const Duration(days: 30));
-
+    // Variables en el state del StatefulBuilder para que setD las actualice correctamente
     await showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
+      builder: (ctx) {
+        int? equipmentId = plan?['equipment_id'] as int?;
+        final titleCtrl = TextEditingController(text: plan?['title'] ?? '');
+        final descCtrl = TextEditingController(text: plan?['description'] ?? '');
+        String frequency = plan?['frequency'] ?? 'monthly';
+        final freqValueCtrl = TextEditingController(text: '${plan?['frequency_value'] ?? 1}');
+        DateTime? nextDue = plan?['next_due'] != null
+            ? DateTime.tryParse(plan!['next_due'] as String)
+            : DateTime.now().add(const Duration(days: 30));
+
+        return StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
           title: Text(plan == null ? 'Nuevo Plan Preventivo' : 'Editar Plan'),
           content: SizedBox(
             width: 480,
             child: SingleChildScrollView(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
+                // Equipo — hint si no hay equipos
+                if (_equipments.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: Text('⚠️ No hay equipos registrados. Creá uno primero en la sección Equipos.',
+                        style: TextStyle(color: Colors.orange, fontSize: 13)),
+                  )
+                else
                 DropdownButtonFormField<int?>(
                   value: equipmentId,
                   decoration: const InputDecoration(labelText: 'Equipo *'),
-                  items: _equipments.map((e) => DropdownMenuItem(
+                  isExpanded: true,
+                  items: _equipments.map((e) => DropdownMenuItem<int?>(
                       value: e['id'] as int,
                       child: Text('${e['code']} - ${e['name']}', overflow: TextOverflow.ellipsis))).toList(),
                   onChanged: (v) => setD(() => equipmentId = v),
@@ -230,7 +241,8 @@ class _PlanningScreenState extends State<PlanningScreen>
             ),
           ],
         ),
-      ),
+        );  // cierre StatefulBuilder
+      },
     );
   }
 

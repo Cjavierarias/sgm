@@ -257,15 +257,19 @@ class _WOCard extends StatelessWidget {
               Row(
                 children: [
                   if (wo['equipment_name'] != null)
-                    _InfoChip(
-                      icon: Icons.precision_manufacturing_rounded,
-                      label: wo['equipment_name'] as String,
+                    Flexible(
+                      child: _InfoChip(
+                        icon: Icons.precision_manufacturing_rounded,
+                        label: wo['equipment_name'] as String,
+                      ),
                     ),
                   if (wo['assigned_to_name'] != null) ...[
-                    const SizedBox(width: 8),
-                    _InfoChip(
-                      icon: Icons.person_rounded,
-                      label: wo['assigned_to_name'] as String,
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: _InfoChip(
+                        icon: Icons.person_rounded,
+                        label: wo['assigned_to_name'] as String,
+                      ),
                     ),
                   ],
                   const Spacer(),
