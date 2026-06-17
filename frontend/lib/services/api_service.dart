@@ -130,9 +130,20 @@ class ApiService {
   Future<Map<String, dynamic>> updateUserRoles(
       int userId, List<String> roles) async {
     await _ensureInitialized();
-    final r = await _dio
-        .put('/auth/users/$userId/roles', data: {'roles': roles});
+    final r =
+        await _dio.put('/auth/users/$userId/roles', data: {'roles': roles});
     return r.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateUser(
+      int userId, Map<String, dynamic> data) async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio.put('/auth/users/$userId', data: data);
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
   }
 
   // ─── DASHBOARD ───────────────────────────────────────────────────────────
@@ -207,8 +218,23 @@ class ApiService {
   Future<Map<String, dynamic>> createEquipment(
       Map<String, dynamic> data) async {
     await _ensureInitialized();
-    final r = await _dio.post('/equipments', data: data);
-    return r.data as Map<String, dynamic>;
+    try {
+      final r = await _dio.post('/equipments', data: data);
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> updateEquipment(
+      int id, Map<String, dynamic> data) async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio.put('/equipments/$id', data: data);
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
   }
 
   // ─── NOTIFICATIONS ───────────────────────────────────────────────────────
