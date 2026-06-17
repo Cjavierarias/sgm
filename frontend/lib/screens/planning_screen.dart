@@ -34,16 +34,20 @@ class _PlanningScreenState extends State<PlanningScreen>
     setState(() => _loading = true);
     try {
       final api = Provider.of<AuthProvider>(context, listen: false).apiService;
-      final results = await Future.wait([
-        api.getMaintenancePlans(),
-        api.getUpcomingPlans(days: 60),
-        api.getEquipments(),
-      ]);
+      // Cargamos por separado para que un error en uno no cancele los demás
+      List<Map<String, dynamic>> plans = [];
+      List<Map<String, dynamic>> upcoming = [];
+      List<Map<String, dynamic>> equipments = [];
+
+      try { plans = await api.getMaintenancePlans(); } catch (_) {}
+      try { upcoming = await api.getUpcomingPlans(days: 60); } catch (_) {}
+      try { equipments = await api.getEquipments(); } catch (_) {}
+
       if (mounted) {
         setState(() {
-          _plans = results[0];
-          _upcoming = results[1];
-          _equipments = results[2];
+          _plans = plans;
+          _upcoming = upcoming;
+          _equipments = equipments;
           _loading = false;
         });
       }

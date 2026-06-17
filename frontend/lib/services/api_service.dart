@@ -307,8 +307,12 @@ class ApiService {
   Future<Map<String, dynamic>> createSparePartRequest(
       Map<String, dynamic> data) async {
     await _ensureInitialized();
-    final r = await _dio.post('/spare-part-requests/', data: data);
-    return r.data as Map<String, dynamic>;
+    try {
+      final r = await _dio.post('/spare-part-requests/', data: data);
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
   }
 
   Future<void> approveSparePartRequest(int id) async {

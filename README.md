@@ -77,5 +77,9 @@ uvicorn app.main:app --reload --port 8000
 
 ## Terminal 2 — CMD normal:
 
-cmdcd C:\Users\Javier\Documents\GitHub\sgm\frontend
+cd C:\Users\Javier\Documents\GitHub\sgm\frontend
 flutter run -d web-server --web-port 8080
+
+## pegar esto en prompt de anaconcda
+cd C:\Users\Javier\Documents\GitHub\sgm\backend
+uvicorn app.main:app --reload --port 8000
