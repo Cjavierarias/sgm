@@ -478,4 +478,48 @@ class ApiService {
     });
     return r.data as Map<String, dynamic>;
   }
+
+  // ─── BILLING / SUSCRIPCIÓN ───────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getBillingStatus() async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio.get('/billing/status');
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> createBillingCheckout(String plan) async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio.post('/billing/checkout', data: {'plan': plan});
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> createBillingSubscription(
+      String plan, String payerEmail) async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio.post('/billing/subscribe',
+          data: {'plan': plan, 'payer_email': payerEmail});
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getBillingHistory() async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio.get('/billing/history');
+      return (r.data as List).cast<Map<String, dynamic>>();
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
 }

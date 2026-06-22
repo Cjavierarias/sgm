@@ -65,3 +65,12 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 async def shutdown_engine() -> None:
     """Cerrar el engine cuando la aplicación se apaga."""
     await engine.dispose()
+
+
+# Fábrica de sesiones disponible para tareas de background (scheduler).
+# Usar como: async with AsyncSessionLocal() as db: ...
+AsyncSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)

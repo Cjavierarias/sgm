@@ -68,6 +68,12 @@ const _allNavItems = [
     route: '/notifications',
     allowedRoles: [],
   ),
+  _NavItem(
+    label: 'Suscripción',
+    icon: Icons.credit_card_rounded,
+    route: '/subscription',
+    allowedRoles: ['admin'],
+  ),
 ];
 
 class MainShell extends StatelessWidget {

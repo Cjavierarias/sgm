@@ -178,15 +178,39 @@ async def login(
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
-    """Registro del primer usuario de una empresa nueva."""
+    """
+    Registro del primer usuario administrador de una empresa nueva.
+
+    Reglas de negocio:
+    - El email no puede estar ya registrado.
+    - El email no puede estar bloqueado (admin con deuda pendiente).
+    - Se crea automáticamente una suscripción en período de prueba de 30 días.
+    - Solo 1 administrador por empresa (el que se registra aquí).
+    """
+    from app.services.billing import create_trial_subscription, is_email_blocked_as_admin
+
+    # 1. Email ya registrado
     existing = await db.execute(select(User).where(User.email == payload.email))
     if existing.scalars().first():
         raise HTTPException(status_code=400, detail="El email ya está registrado")
 
+    # 2. Email bloqueado por deuda previa
+    if await is_email_blocked_as_admin(db, payload.email):
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Este email tiene una deuda pendiente con SGM y no puede registrar "
+                "una nueva empresa hasta regularizar su situación. "
+                "Contacte a soporte@bsaconsultora.com para más información."
+            ),
+        )
+
+    # 3. Crear empresa
     company = Company(name=payload.company_name or "Mi Empresa")
     db.add(company)
     await db.flush()
 
+    # 4. Crear usuario administrador
     hashed = auth_service.get_password_hash(payload.password)
     user = User(
         email=payload.email,
@@ -199,12 +223,15 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
     db.add(user)
     await db.flush()
 
-    # El primer usuario siempre es admin
+    # 5. Asignar rol admin
     user_role = UserRole(user_id=user.id, role=RoleName.admin)
     db.add(user_role)
     await db.commit()
-    await db.refresh(user)
 
+    # 6. Crear suscripción en trial (30 días gratis)
+    await create_trial_subscription(db, company.id, payload.email)
+
+    await db.refresh(user)
     result = await db.execute(
         select(User).options(selectinload(User.user_roles)).where(User.id == user.id)
     )

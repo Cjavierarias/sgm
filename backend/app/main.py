@@ -29,6 +29,8 @@ from app.routers.spare_parts import router as sp_router
 from app.routers.spare_parts import requests_router as sp_req_router
 from app.routers.purchases import suppliers_router, po_router, invoices_router
 from app.routers.planning import router as planning_router
+from app.routers.billing import router as billing_router
+from app.scheduler import start_scheduler, stop_scheduler
 
 # ─── Rate limiter global ───────────────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address)
@@ -67,6 +69,16 @@ async def startup_event() -> None:
     async with engine.begin() as conn:
         await conn.execute(text("SELECT 1"))
         await conn.run_sync(Base.metadata.create_all)
+    # Importar modelos de suscripción para que create_all los incluya
+    from app.models import subscription  # noqa: F401
+    async with engine.begin() as conn:
+        await conn.run_sync(subscription.Base.metadata.create_all)
+    start_scheduler()
+
+
+@app.on_event("shutdown")
+async def shutdown_event() -> None:
+    stop_scheduler()
 
 
 app.include_router(auth_router)
@@ -80,8 +92,9 @@ app.include_router(suppliers_router)
 app.include_router(po_router)
 app.include_router(invoices_router)
 app.include_router(planning_router)
+app.include_router(billing_router)
 
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "2.1.0"}
+    return {"status": "ok", "version": "2.3.0"}
