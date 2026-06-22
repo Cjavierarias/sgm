@@ -203,7 +203,7 @@ class _SummaryCards extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 200,
-        mainAxisExtent: 120,
+        mainAxisExtent: 130,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
@@ -306,7 +306,7 @@ class _LoadingCards extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 200,
-        mainAxisExtent: 120,
+        mainAxisExtent: 130,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
