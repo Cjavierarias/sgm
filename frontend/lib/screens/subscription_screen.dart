@@ -1,6 +1,6 @@
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../main.dart' show BsaTheme;
 import '../providers/auth_provider.dart';
 import '../providers/subscription_provider.dart';
@@ -46,13 +46,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     try {
       final data = await _subProvider.createCheckout(plan);
       final url = data['init_point'] as String? ?? '';
-      if (url.isEmpty) throw Exception('No se recibió URL de pago');
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        throw Exception('No se puede abrir el navegador');
-      }
+      if (url.isEmpty) throw Exception('No se recibio URL de pago');
+      // Abre Mercado Pago en nueva pestana (Flutter Web usa dart:html)
+      html.window.open(url, '_blank');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

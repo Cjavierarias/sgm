@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/equipment.dart';
 import '../providers/auth_provider.dart';
+import '../services/api_service.dart';
 
 class EquipmentScreen extends StatefulWidget {
   final String equipmentId;
@@ -20,12 +21,15 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
   @override
   void initState() {
     super.initState();
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final api = ApiService()..setAuthToken(auth.token);
     final id = int.tryParse(widget.equipmentId);
     if (id == null) {
-      _equipmentFuture = Future.error('ID de equipo inválido');
+      _equipmentFuture = Future.error('ID de equipo invalido');
     } else {
-      _equipmentFuture = authProvider.fetchEquipmentById(id);
+      _equipmentFuture = api.getEquipment(id).then(
+        (data) => Equipment.fromJson(data),
+      );
     }
   }
 

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/equipment.dart';
 import '../providers/auth_provider.dart';
+import '../services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,18 +15,24 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late Future<List<Equipment>> _equipmentsFuture;
+  late ApiService _api;
 
   @override
   void initState() {
     super.initState();
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    _equipmentsFuture = authProvider.fetchEquipments();
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    _api = ApiService()..setAuthToken(auth.token);
+    _equipmentsFuture = _fetchEquipments();
+  }
+
+  Future<List<Equipment>> _fetchEquipments() async {
+    final data = await _api.getEquipments();
+    return data.map((e) => Equipment.fromJson(e)).toList();
   }
 
   void _reloadEquipments() {
     setState(() {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      _equipmentsFuture = authProvider.fetchEquipments();
+      _equipmentsFuture = _fetchEquipments();
     });
   }
 

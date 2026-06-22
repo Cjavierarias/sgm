@@ -18,7 +18,6 @@ import 'screens/spare_parts_screen.dart';
 import 'screens/purchases_screen.dart';
 import 'screens/planning_screen.dart';
 import 'screens/subscription_screen.dart';
-import 'providers/subscription_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
