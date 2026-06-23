@@ -309,6 +309,41 @@ class _RegisterScreenState extends State<RegisterScreen>
               ),
               const SizedBox(height: 20),
 
+              // 🆕 Trial info banner
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF2D9F5E).withOpacity(0.3)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.card_giftcard_rounded, color: Color(0xFF2D9F5E), size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text('30 días gratis',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E7A45),
+                                  fontSize: 14)),
+                          SizedBox(height: 2),
+                          Text(
+                            'Después: USD 5/mes o USD 50/año. Sin límite de colaboradores. Cancelá cuando quieras.',
+                            style: TextStyle(fontSize: 12, color: Color(0xFF3E8E5C)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
               // Error inline
               if (_error.isNotEmpty) ...[
                 Container(

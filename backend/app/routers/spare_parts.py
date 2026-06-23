@@ -48,6 +48,8 @@ class SparePartCreate(BaseModel):
     min_stock: float = 0
     location: Optional[str] = None
     unit_cost: Optional[float] = None
+    equipment_id: Optional[int] = None
+    sector: Optional[str] = None
 
 
 class SparePartUpdate(BaseModel):
@@ -57,6 +59,8 @@ class SparePartUpdate(BaseModel):
     min_stock: Optional[float] = None
     location: Optional[str] = None
     unit_cost: Optional[float] = None
+    equipment_id: Optional[int] = None
+    sector: Optional[str] = None
 
 
 class StockMovementCreate(BaseModel):
@@ -87,6 +91,9 @@ class SparePartOut(BaseModel):
     min_stock: float
     location: Optional[str]
     unit_cost: Optional[float]
+    equipment_id: Optional[int] = None
+    equipment_name: Optional[str] = None
+    sector: Optional[str] = None
     is_low_stock: bool
     created_at: datetime
     movements: List[MovementOut] = []
@@ -145,6 +152,9 @@ def _sp_to_out(sp: SparePart) -> SparePartOut:
         min_stock=sp.min_stock,
         location=sp.location,
         unit_cost=sp.unit_cost,
+        equipment_id=sp.equipment_id,
+        equipment_name=sp.equipment.name if sp.equipment else None,
+        sector=sp.sector,
         is_low_stock=sp.stock <= sp.min_stock,
         created_at=sp.created_at,
         movements=movements,
@@ -239,6 +249,8 @@ async def create_spare_part(
         min_stock=payload.min_stock,
         location=payload.location,
         unit_cost=payload.unit_cost,
+        equipment_id=payload.equipment_id,
+        sector=payload.sector,
     )
     db.add(sp)
 
@@ -294,6 +306,8 @@ async def update_spare_part(
     if payload.min_stock is not None: sp.min_stock = payload.min_stock
     if payload.location is not None: sp.location = payload.location
     if payload.unit_cost is not None: sp.unit_cost = payload.unit_cost
+    if payload.equipment_id is not None: sp.equipment_id = payload.equipment_id
+    if payload.sector is not None: sp.sector = payload.sector
 
     await db.commit()
     result = await db.execute(_load_sp_query(current_user.company_id).where(SparePart.id == sp_id))

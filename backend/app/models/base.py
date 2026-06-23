@@ -301,10 +301,14 @@ class SparePart(Base):
     min_stock     = Column(Float, default=0)
     location      = Column(String(100), nullable=True)  # Ubicación en depósito
     unit_cost     = Column(Float, nullable=True)
+    # Nuevos campos: asociación a equipo o sector
+    equipment_id  = Column(Integer, ForeignKey("equipments.id", ondelete="SET NULL"), nullable=True, index=True)
+    sector        = Column(String(100), nullable=True)  # "mecanica", "electricidad", "insumos", etc.
     created_at    = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at    = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     company:    "Company"               = relationship("Company", back_populates="spare_parts")
+    equipment:  Optional["Equipment"]   = relationship("Equipment", foreign_keys=[equipment_id])
     movements:  List["StockMovement"]   = relationship("StockMovement", back_populates="spare_part", cascade="all, delete-orphan")
     requests:   List["SparePartRequest"] = relationship("SparePartRequest", back_populates="spare_part")
 

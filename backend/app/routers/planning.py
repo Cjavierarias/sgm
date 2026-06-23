@@ -12,7 +12,7 @@ GET    /maintenance-plans/upcoming      Planes con vencimiento en los próximos 
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -97,7 +97,7 @@ def _calc_next_due(frequency: str, freq_value: int, from_date: datetime) -> date
 
 
 def _plan_to_out(plan: MaintenancePlan, assigned_user: Optional[User] = None) -> PlanOut:
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     days_until = None
     is_overdue = False
     if plan.next_due:
@@ -143,7 +143,7 @@ async def upcoming_plans(
     db: AsyncSession = Depends(get_db),
 ):
     """Planes con vencimiento en los próximos N días (incluye vencidos)."""
-    limit_date = datetime.utcnow() + timedelta(days=days)
+    limit_date = datetime.now(timezone.utc) + timedelta(days=days)
     result = await db.execute(
         _load_plan_query(current_user.company_id)
         .where(
@@ -192,7 +192,7 @@ async def create_plan(
         raise HTTPException(status_code=400, detail=f"Frecuencia inválida: {payload.frequency}")
 
     next_due = payload.next_due or _calc_next_due(
-        payload.frequency, payload.frequency_value, datetime.utcnow()
+        payload.frequency, payload.frequency_value, datetime.now(timezone.utc)
     )
 
     plan = MaintenancePlan(
@@ -295,7 +295,7 @@ async def execute_plan(
     if not plan:
         raise HTTPException(status_code=404, detail="Plan no encontrado")
 
-    executed_at = payload.executed_at or datetime.utcnow()
+    executed_at = payload.executed_at or datetime.now(timezone.utc)
     plan.last_done = executed_at
     plan.next_due = _calc_next_due(
         plan.frequency if isinstance(plan.frequency, str) else plan.frequency.value,

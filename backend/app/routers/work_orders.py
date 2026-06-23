@@ -319,6 +319,7 @@ async def update_status(
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Estado inválido: {payload.status}")
 
+    old_status = wo.status
     wo.status = new_status
     if new_status == WOStatus.closed:
         wo.closed_at = datetime.utcnow()
@@ -332,12 +333,39 @@ async def update_status(
     )
     db.add(comment)
 
+    # ── Notificaciones automáticas ──────────────────────────────────────
+    # Si pasó a "waiting_parts" → avisar a depósito
+    if new_status == WOStatus.waiting_parts and old_status != WOStatus.waiting_parts:
+        warehouse_users = await db.execute(
+            select(User).join(User.user_roles).where(
+                User.company_id == current_user.company_id,
+                User.is_active == True,
+            )
+        )
+        for u in warehouse_users.scalars().all():
+            user_roles = [ur.role.value if hasattr(ur.role, 'value') else str(ur.role) for ur in u.user_roles]
+            if any(r in ('admin', 'warehouse') for r in user_roles):
+                await _notify(
+                    db, u.id,
+                    "🔧 OT espera repuestos",
+                    f"La OT '{wo.title}' ({wo.code if hasattr(wo, 'code') else f'#{wo.id}'}) está esperando repuestos. Revisá el pedido.",
+                    f"/work-orders/{wo.id}",
+                )
+
     # Notificar al jefe si el técnico cierra la OT
-    if new_status == WOStatus.closed and wo.created_by_id:
+    if new_status == WOStatus.closed and wo.created_by_id and current_user.id != wo.created_by_id:
         await _notify(
             db, wo.created_by_id,
             "OT cerrada",
             f"La OT '{wo.title}' fue cerrada por {current_user.full_name or current_user.email}",
+            f"/work-orders/{wo.id}",
+        )
+    # Notificar al creador si se cancela
+    if new_status == WOStatus.cancelled and wo.created_by_id and current_user.id != wo.created_by_id:
+        await _notify(
+            db, wo.created_by_id,
+            "OT cancelada",
+            f"La OT '{wo.title}' fue cancelada por {current_user.full_name or current_user.email}",
             f"/work-orders/{wo.id}",
         )
 

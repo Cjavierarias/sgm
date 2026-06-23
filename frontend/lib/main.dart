@@ -52,13 +52,12 @@ class MyApp extends StatelessWidget {
       refreshListenable: auth,
       redirect: (context, state) {
         final loggedIn = auth.isAuthenticated;
-        final loggingIn = state.matchedLocation == '/login';
-        final acceptingInv = state.matchedLocation.startsWith('/accept-invitation');
-        if (acceptingInv) return null;  // ruta pública
-        if (!loggedIn && !loggingIn) return '/login';
-        final registering = state.matchedLocation == '/register';
-        if (loggedIn && loggingIn) return '/dashboard';
-        if (!loggedIn && registering) return null;
+        final location = state.matchedLocation;
+        final publicRoutes = ['/login', '/register', '/accept-invitation'];
+        final isPublic = publicRoutes.any((r) => location.startsWith(r));
+        if (isPublic) return null;  // rutas públicas no requieren auth
+        if (!loggedIn) return '/login';
+        if (loggedIn && location == '/login') return '/dashboard';
         return null;
       },
       routes: [
