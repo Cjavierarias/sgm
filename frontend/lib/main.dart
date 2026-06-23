@@ -53,10 +53,13 @@ class MyApp extends StatelessWidget {
       redirect: (context, state) {
         final loggedIn = auth.isAuthenticated;
         final location = state.matchedLocation;
-        final publicRoutes = ['/login', '/register', '/accept-invitation'];
+        // Rutas públicas: accesibles sin login
+        final publicRoutes = ['/register', '/accept-invitation'];
         final isPublic = publicRoutes.any((r) => location.startsWith(r));
-        if (isPublic) return null;  // rutas públicas no requieren auth
-        if (!loggedIn) return '/login';
+        if (isPublic) return null;
+        // Si no está logueado y no está en login → redirigir a login
+        if (!loggedIn && location != '/login') return '/login';
+        // Si está logueado y está en login → ir al dashboard
         if (loggedIn && location == '/login') return '/dashboard';
         return null;
       },
