@@ -17,3 +17,8 @@ slowapi>=0.1.9
 # Facturación / Mercado Pago
 mercadopago>=2.2.0
 apscheduler>=3.10.0
+# Google APIs (Calendar, Sheets, Drive)
+google-api-python-client==2.95.0
+google-auth==2.22.0
+google-auth-httplib2>=0.1.1
+google-auth-oauthlib>=1.1.0

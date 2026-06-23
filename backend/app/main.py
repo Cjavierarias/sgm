@@ -30,6 +30,9 @@ from app.routers.spare_parts import requests_router as sp_req_router
 from app.routers.purchases import suppliers_router, po_router, invoices_router
 from app.routers.planning import router as planning_router
 from app.routers.billing import router as billing_router
+from app.routers.invitations import router as invitations_router
+from app.routers.calendar import router as calendar_router
+from app.routers.exports import router as exports_router
 from app.scheduler import start_scheduler, stop_scheduler
 
 # ─── Rate limiter global ───────────────────────────────────────────────────────
@@ -71,8 +74,10 @@ async def startup_event() -> None:
         await conn.run_sync(Base.metadata.create_all)
     # Importar modelos de suscripción para que create_all los incluya
     from app.models import subscription  # noqa: F401
+    from app.models import collaboration  # noqa: F401
     async with engine.begin() as conn:
         await conn.run_sync(subscription.Base.metadata.create_all)
+        await conn.run_sync(collaboration.Base.metadata.create_all)
     start_scheduler()
 
 
@@ -93,6 +98,9 @@ app.include_router(po_router)
 app.include_router(invoices_router)
 app.include_router(planning_router)
 app.include_router(billing_router)
+app.include_router(invitations_router)
+app.include_router(calendar_router)
+app.include_router(exports_router)
 
 
 @app.get("/health")

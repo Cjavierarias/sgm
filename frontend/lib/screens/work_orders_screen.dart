@@ -1,3 +1,4 @@
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -34,6 +35,35 @@ class _WorkOrdersScreenState extends State<WorkOrdersScreen> {
     }
   }
 
+  Future<void> _exportToSheets(BuildContext context, AuthProvider auth) async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Exportando a Google Sheets...')),
+      );
+      final data = await auth.apiService.exportToSheets('work-orders');
+      final url = data['sheet_url'] as String?;
+      if (url != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exportado: ${data['rows_exported']} filas'),
+            backgroundColor: BsaTheme.secondary,
+            action: SnackBarAction(label: 'Abrir', onPressed: () => _openUrl(url)),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
+
+  void _openUrl(String url) {
+    if (url.isNotEmpty) {
+      html.window.open(url, '_blank');
+    }
+  }
+
   List<Map<String, dynamic>> get _filtered {
     if (_filterStatus == 'all') return _orders;
     return _orders.where((o) => o['status'] == _filterStatus).toList();
@@ -50,6 +80,11 @@ class _WorkOrdersScreenState extends State<WorkOrdersScreen> {
       appBar: AppBar(
         title: const Text('Órdenes de Trabajo'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.upload_file, size: 20),
+            tooltip: 'Exportar a Google Sheets',
+            onPressed: () => _exportToSheets(context, auth),
+          ),
           if (canCreate)
             Padding(
               padding: const EdgeInsets.only(right: 12),

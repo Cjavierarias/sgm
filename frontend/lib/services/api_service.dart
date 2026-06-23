@@ -522,4 +522,101 @@ class ApiService {
       _handleDioError(e);
     }
   }
+
+  // ─── INVITATIONS ─────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> createInvitation({
+    required String email,
+    String? fullName,
+    List<String> roles = const ['technician'],
+  }) async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio.post('/invitations', data: {
+        'email': email,
+        if (fullName != null) 'full_name': fullName,
+        'roles': roles,
+      });
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getInvitations() async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio.get('/invitations');
+      return (r.data as List).cast<Map<String, dynamic>>();
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  Future<void> revokeInvitation(int id) async {
+    await _ensureInitialized();
+    await _dio.post('/invitations/$id/revoke');
+  }
+
+  Future<Map<String, dynamic>> checkInvitationToken(String token) async {
+    await _ensureInitialized();
+    final r = await _dio.get('/invitations/$token');
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> acceptInvitation({
+    required String token,
+    required String password,
+    String? fullName,
+    String? phone,
+    String? position,
+  }) async {
+    await _ensureInitialized();
+    final r = await _dio.post('/invitations/$token/accept', data: {
+      'password': password,
+      if (fullName != null) 'full_name': fullName,
+      if (phone != null) 'phone': phone,
+      if (position != null) 'position': position,
+    });
+    return r.data as Map<String, dynamic>;
+  }
+
+  // ─── CALENDAR ────────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getCalendarEvents({
+    String? dateFrom,
+    String? dateTo,
+  }) async {
+    await _ensureInitialized();
+    final r = await _dio.get('/calendar/events', queryParameters: {
+      if (dateFrom != null) 'date_from': dateFrom,
+      if (dateTo != null) 'date_to': dateTo,
+    });
+    return (r.data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> createCompanyCalendar(String adminEmail) async {
+    await _ensureInitialized();
+    final r = await _dio.post('/calendar/company', data: {'admin_email': adminEmail});
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> syncPlanToCalendar(int planId) async {
+    await _ensureInitialized();
+    final r = await _dio.post('/maintenance-plans/$planId/sync');
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<void> deleteCalendarEvent(int id) async {
+    await _ensureInitialized();
+    await _dio.delete('/calendar/events/$id');
+  }
+
+  // ─── EXPORT TO SHEETS ────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> exportToSheets(String module) async {
+    await _ensureInitialized();
+    final r = await _dio.post('/export/$module/sheets');
+    return r.data as Map<String, dynamic>;
+  }
 }

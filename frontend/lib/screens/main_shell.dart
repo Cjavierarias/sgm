@@ -74,6 +74,18 @@ const _allNavItems = [
     route: '/subscription',
     allowedRoles: ['admin'],
   ),
+  _NavItem(
+    label: 'Invitaciones',
+    icon: Icons.mail_rounded,
+    route: '/invitations',
+    allowedRoles: ['admin', 'hr'],
+  ),
+  _NavItem(
+    label: 'Calendario',
+    icon: Icons.calendar_month_rounded,
+    route: '/calendar',
+    allowedRoles: [],
+  ),
 ];
 
 class MainShell extends StatelessWidget {

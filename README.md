@@ -18,6 +18,10 @@ Desarrollado y mantenido por **BSA Consultora**.
 - Multi-tenant (múltiples empresas por instancia)
 - Control de acceso por roles (admin, maintenance_manager, technician, warehouse, purchasing, hr, viewer)
 - **Sistema de cobros SaaS** con Mercado Pago (trial 30 días → mensual USD 5 / anual USD 50)
+- **Invitaciones por email** a colaboradores con token de un solo uso
+- **Calendario compartido** sincronizado con Google Calendar
+- **Exportación a Google Sheets** de OT, repuestos, equipos y planes
+- **Integración Google Workspace** (Drive, Calendar, Sheets)
 
 ---
 
@@ -83,6 +87,95 @@ alembic upgrade head
 | POST | `/billing/webhook` | Webhook de Mercado Pago (no requiere auth) |
 | GET | `/billing/history` | Historial de pagos (solo admin) |
 | POST | `/billing/admin/check-subscriptions?secret=X` | Cron manual |
+
+---
+
+## 📧 Invitaciones por Email
+
+El admin invita colaboradores por email. El invitado recibe un link con token y completa su registro.
+
+### Flujo
+```
+Admin → POST /invitations (email + rol) → Email con link → Invitado acepta → Usuario creado + auto-login
+```
+
+### Endpoints
+| Método | URL | Descripción |
+|---|---|---|
+| POST | `/invitations` | Enviar invitación (admin/hr) |
+| GET | `/invitations` | Listar invitaciones (admin/hr) |
+| POST | `/invitations/{id}/revoke` | Revocar (admin/hr) |
+| GET | `/invitations/{token}` | Validar token (público) |
+| POST | `/invitations/{token}/accept` | Aceptar y crear cuenta (público) |
+
+### Configuración SMTP
+```env
+SMTP_ENABLED=true
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=tu_email@gmail.com
+SMTP_PASSWORD=app_password_de_16_caracteres
+```
+> En desarrollo (`SMTP_ENABLED=false`) los emails se loguean en consola.
+
+---
+
+## 📅 Calendario Compartido + Google Calendar
+
+Sincronización de planes de mantenimiento con Google Calendar del admin.
+
+### Flujo
+```
+Admin → POST /calendar/company (crea calendario Google) → Comparte con colaboradores
+Admin → POST /maintenance-plans/{id}/sync → Crea evento en Google Calendar
+Colaboradores ven el calendario compartido en su Google Calendar
+```
+
+### Endpoints
+| Método | URL | Descripción |
+|---|---|---|
+| GET | `/calendar/events` | Eventos de la empresa (rango de fechas) |
+| POST | `/calendar/company` | Crear calendario Google (admin) |
+| POST | `/calendar/share/{user_id}` | Compartir con usuario (admin) |
+| POST | `/maintenance-plans/{id}/sync` | Sincronizar plan con Calendar |
+| DELETE | `/calendar/events/{id}` | Eliminar evento |
+
+---
+
+## 📊 Exportación a Google Sheets
+
+Exporta datos tabulares a una hoja de cálculo de Google Sheets compartida con el admin.
+
+### Endpoints
+| Método | URL | Descripción |
+|---|---|---|
+| POST | `/export/work-orders/sheets` | Exportar OT |
+| POST | `/export/spare-parts/sheets` | Exportar repuestos |
+| POST | `/export/equipments/sheets` | Exportar equipos |
+| POST | `/export/maintenance-plans/sheets` | Exportar planes |
+
+Cada exportación crea una nueva hoja en el Drive del admin, con encabezados formateados y compartida con permisos de escritor.
+
+---
+
+## 🔧 Configuración Google Workspace
+
+Para habilitar Calendar, Sheets y Drive:
+
+1. **Google Cloud Console** → Crear proyecto → Habilitar APIs:
+   - Google Calendar API
+   - Google Sheets API
+   - Google Drive API
+
+2. **Service Account** → IAM → Service Accounts → Crear → Descargar JSON
+
+3. **Compartir calendario** con el email de la service account (`xxx@project.iam.gserviceaccount.com`)
+
+4. **Variables de entorno:**
+```env
+GOOGLE_SERVICE_ACCOUNT_FILE=/ruta/al/service-account.json
+GOOGLE_DRIVE_DOMAIN=miempresa.com
+```
 
 ---
 
@@ -164,3 +257,5 @@ uvicorn app.main:app --reload --port 8000
 ## pegar esto en prompt de anaconcda
 cd C:\Users\Javier\Documents\GitHub\sgm\backend
 uvicorn app.main:app --reload --port 8000
+
+.\start-sgm.ps1

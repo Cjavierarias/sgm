@@ -131,6 +131,14 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Setea un token externo (ej: tras aceptar invitación) y carga el usuario.
+  Future<void> setTokenAndLoad(String token) async {
+    _token = token;
+    _apiService.setAuthToken(_token);
+    await _saveToken(_token);
+    await _loadUserInfo();
+  }
+
   Future<void> _saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', token);

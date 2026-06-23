@@ -241,7 +241,7 @@ class _SummaryCard extends StatelessWidget {
         onTap: () => context.go(data.route),
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(16), // antes 18
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: BsaTheme.border),
@@ -253,13 +253,13 @@ class _SummaryCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 38, // antes 40
+                    height: 38, // antes 40
                     decoration: BoxDecoration(
                       color: data.bgColor,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(data.icon, color: data.color, size: 20),
+                    child: Icon(data.icon, color: data.color, size: 19),
                   ),
                   Icon(
                     Icons.arrow_forward_ios_rounded,
@@ -271,20 +271,25 @@ class _SummaryCard extends StatelessWidget {
               const Spacer(),
               Text(
                 data.value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 32,
+                  fontSize: 30, // antes 32
                   fontWeight: FontWeight.bold,
                   color: data.color,
                   height: 1,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2), // antes 4
               Text(
                 data.label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 12,
                   color: BsaTheme.textSecondary,
                   fontWeight: FontWeight.w500,
+                  height: 1.15,
                 ),
               ),
             ],

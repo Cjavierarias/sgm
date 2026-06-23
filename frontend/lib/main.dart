@@ -18,6 +18,9 @@ import 'screens/spare_parts_screen.dart';
 import 'screens/purchases_screen.dart';
 import 'screens/planning_screen.dart';
 import 'screens/subscription_screen.dart';
+import 'screens/accept_invitation_screen.dart';
+import 'screens/invitations_screen.dart';
+import 'screens/calendar_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,6 +53,8 @@ class MyApp extends StatelessWidget {
       redirect: (context, state) {
         final loggedIn = auth.isAuthenticated;
         final loggingIn = state.matchedLocation == '/login';
+        final acceptingInv = state.matchedLocation.startsWith('/accept-invitation');
+        if (acceptingInv) return null;  // ruta pública
         if (!loggedIn && !loggingIn) return '/login';
         final registering = state.matchedLocation == '/register';
         if (loggedIn && loggingIn) return '/dashboard';
@@ -64,6 +69,12 @@ class MyApp extends StatelessWidget {
         GoRoute(
           path: '/register',
           builder: (_, __) => const RegisterScreen(),
+        ),
+        GoRoute(
+          path: '/accept-invitation',
+          builder: (_, state) => AcceptInvitationScreen(
+            token: state.uri.queryParameters['token'] ?? '',
+          ),
         ),
         ShellRoute(
           builder: (context, state, child) => MainShell(child: child),
@@ -108,6 +119,14 @@ class MyApp extends StatelessWidget {
             GoRoute(
               path: '/subscription',
               builder: (_, __) => const SubscriptionScreen(),
+            ),
+            GoRoute(
+              path: '/invitations',
+              builder: (_, __) => const InvitationsScreen(),
+            ),
+            GoRoute(
+              path: '/calendar',
+              builder: (_, __) => const CalendarScreen(),
             ),
           ],
         ),
