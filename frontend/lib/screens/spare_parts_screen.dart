@@ -65,6 +65,8 @@ class _SparePartsScreenState extends State<SparePartsScreen>
     final auth = Provider.of<AuthProvider>(context);
     final canManage =
         auth.hasAnyRole(['admin', 'warehouse', 'maintenance_manager']);
+    // Técnicos pueden ver stock aunque no gestionar
+    final canView = auth.hasAnyRole(['admin', 'warehouse', 'maintenance_manager', 'technician', 'purchasing']);
     final pendingCount =
         _requests.where((r) => r['status'] == 'pending').length;
 
@@ -143,7 +145,7 @@ class _SparePartsScreenState extends State<SparePartsScreen>
                 ),
               ],
             ),
-      floatingActionButton: auth.hasAnyRole(['admin', 'maintenance_manager', 'technician'])
+      floatingActionButton: auth.hasAnyRole(['admin', 'maintenance_manager', 'technician', 'warehouse'])
           ? FloatingActionButton.extended(
               onPressed: () async {
                 await _showRequestForm(context);
@@ -547,7 +549,7 @@ class _RequestsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canManage = auth.hasAnyRole(['admin', 'warehouse']);
+    final canManage = auth.hasAnyRole(['admin', 'warehouse', 'maintenance_manager']);
 
     return RefreshIndicator(
       onRefresh: () async => onRefresh(),
@@ -619,6 +621,23 @@ class _RequestsTab extends StatelessWidget {
                           const SizedBox(height: 10),
                           Row(
                             children: [
+                              OutlinedButton.icon(
+                                icon: const Icon(Icons.check_circle_outline,
+                                    size: 16),
+                                label: const Text('Aprobar',
+                                    style: TextStyle(fontSize: 13)),
+                                style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color(0xFF2E86AB)),
+                                onPressed: () async {
+                                  await Provider.of<AuthProvider>(context,
+                                          listen: false)
+                                      .apiService
+                                      .approveSparePartRequest(
+                                          req['id'] as int);
+                                  onRefresh();
+                                },
+                              ),
+                              const SizedBox(width: 8),
                               OutlinedButton.icon(
                                 icon: const Icon(Icons.local_shipping_rounded,
                                     size: 16),

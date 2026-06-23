@@ -39,7 +39,7 @@ from app.scheduler import start_scheduler, stop_scheduler
 limiter = Limiter(key_func=get_remote_address)
 
 # ─── CORS: orígenes permitidos desde variable de entorno ──────────────────────
-_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:8080,http://localhost:3000")
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:8080,http://localhost:3000,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173")
 ALLOWED_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 app = FastAPI(
@@ -58,8 +58,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 UPLOAD_DIR = "/tmp/sgm_uploads"

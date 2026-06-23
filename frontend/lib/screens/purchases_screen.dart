@@ -145,18 +145,21 @@ class _PurchasesScreenState extends State<PurchasesScreen>
                   onChangeStatus: _changePOStatus,
                   onShowDetail: (po) => _showPODetail(context, po),
                   auth: auth,
+                  canEdit: canManage,
                 ),
                 _SuppliersTab(
                   suppliers: _suppliers,
                   onRefresh: _load,
                   auth: auth,
                   onEdit: (s) => _showSupplierForm(context, supplier: s),
+                  canEdit: canManage,
                 ),
                 _InvoicesTab(
                   invoices: _invoices,
                   pos: _pos,
                   onRefresh: _load,
                   auth: auth,
+                  canEdit: canManage,
                 ),
               ],
             ),
@@ -594,12 +597,14 @@ class _POTab extends StatelessWidget {
   final Function(Map<String, dynamic>, String) onChangeStatus;
   final Function(Map<String, dynamic>) onShowDetail;
   final AuthProvider auth;
+  final bool canEdit;
 
   const _POTab({
     required this.pos, required this.allPos, required this.filterStatus,
     required this.onFilterChanged, required this.onRefresh,
     required this.onReceive, required this.onChangeStatus,
     required this.onShowDetail, required this.auth,
+    required this.canEdit,
   });
 
   static const _filters = [
@@ -781,9 +786,10 @@ class _SuppliersTab extends StatefulWidget {
   final VoidCallback onRefresh;
   final AuthProvider auth;
   final Function(Map<String, dynamic>) onEdit;
+  final bool canEdit;
 
   const _SuppliersTab({required this.suppliers, required this.onRefresh,
-      required this.auth, required this.onEdit});
+      required this.auth, required this.onEdit, required this.canEdit});
 
   @override
   State<_SuppliersTab> createState() => _SuppliersTabState();
@@ -939,9 +945,10 @@ class _InvoicesTab extends StatefulWidget {
   final List<Map<String, dynamic>> pos;
   final VoidCallback onRefresh;
   final AuthProvider auth;
+  final bool canEdit;
 
   const _InvoicesTab({required this.invoices, required this.pos,
-      required this.onRefresh, required this.auth});
+      required this.onRefresh, required this.auth, required this.canEdit});
 
   @override
   State<_InvoicesTab> createState() => _InvoicesTabState();

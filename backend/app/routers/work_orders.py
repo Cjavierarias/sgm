@@ -187,11 +187,14 @@ async def list_work_orders(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    user_roles = [ur.role for ur in current_user.user_roles]
+    user_roles = [ur.role.value if hasattr(ur.role, 'value') else str(ur.role) for ur in current_user.user_roles]
     query = _load_wo_query(current_user.company_id).order_by(WorkOrder.created_at.desc())
 
-    # Técnicos solo ven sus propias OT
-    if user_roles == ["technician"]:
+    # Si el usuario solo tiene roles de solo-lectura (technician, viewer, hr) sin roles de gestión,
+    # solo ve sus propias OT (o todas si es viewer)
+    management_roles = {"admin", "maintenance_manager", "warehouse", "purchasing"}
+    has_management = any(r in management_roles for r in user_roles)
+    if not has_management and "technician" in user_roles:
         query = query.where(WorkOrder.assigned_to_id == current_user.id)
 
     result = await db.execute(query)
@@ -257,7 +260,7 @@ async def get_work_order(
 async def update_work_order(
     wo_id: int,
     payload: WOUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin", "maintenance_manager", "technician")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(_load_wo_query(current_user.company_id).where(WorkOrder.id == wo_id))
@@ -306,7 +309,7 @@ async def update_work_order(
 async def update_status(
     wo_id: int,
     payload: WOStatusUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin", "maintenance_manager", "technician")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(_load_wo_query(current_user.company_id).where(WorkOrder.id == wo_id))

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../main.dart' show BsaTheme;
 import '../providers/auth_provider.dart';
 
 class WorkOrderDetailScreen extends StatefulWidget {
@@ -14,6 +15,7 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
   bool _loading = true;
   final _commentCtrl = TextEditingController();
   bool _sendingComment = false;
+  List<Map<String, dynamic>> _spareParts = [];
 
   @override
   void initState() {
@@ -31,8 +33,17 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
     setState(() => _loading = true);
     try {
       final auth = Provider.of<AuthProvider>(context, listen: false);
-      final data = await auth.apiService.getWorkOrder(widget.woId);
-      if (mounted) setState(() { _wo = data; _loading = false; });
+      final results = await Future.wait([
+        auth.apiService.getWorkOrder(widget.woId),
+        auth.apiService.getSpareParts(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _wo = results[0] as Map<String, dynamic>;
+          _spareParts = results[1] as List<Map<String, dynamic>>;
+          _loading = false;
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => _loading = false);
     }
@@ -70,6 +81,99 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
     }
   }
 
+  Future<void> _showRequestPartForm() async {
+    if (_spareParts.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No hay repuestos disponibles para solicitar')));
+      }
+      return;
+    }
+    int? selectedPartId = _spareParts.first['id'] as int?;
+    final qtyCtrl = TextEditingController(text: '1');
+    final notesCtrl = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          title: const Text('Solicitar Repuesto'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<int>(
+                  value: selectedPartId,
+                  decoration: const InputDecoration(labelText: 'Repuesto *'),
+                  items: _spareParts
+                      .map((p) => DropdownMenuItem(
+                            value: p['id'] as int,
+                            child: Text(
+                                '${p['code']} - ${p['name']} (${p['stock']} ${p['unit']})',
+                                overflow: TextOverflow.ellipsis),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setD(() => selectedPartId = v),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: qtyCtrl,
+                  decoration: const InputDecoration(labelText: 'Cantidad *'),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: notesCtrl,
+                  decoration: const InputDecoration(labelText: 'Notas (opcional)'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancelar')),
+            ElevatedButton(
+              onPressed: () async {
+                if (selectedPartId == null) return;
+                final qty = double.tryParse(qtyCtrl.text) ?? 0;
+                if (qty <= 0) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('Ingresá una cantidad válida')));
+                  return;
+                }
+                try {
+                  final auth = Provider.of<AuthProvider>(context, listen: false);
+                  await auth.apiService.createSparePartRequest({
+                    'spare_part_id': selectedPartId,
+                    'quantity': qty,
+                    'work_order_id': widget.woId,
+                    if (notesCtrl.text.isNotEmpty) 'notes': notesCtrl.text,
+                  });
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('✅ Pedido enviado al depósito'),
+                        backgroundColor: BsaTheme.secondary,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(content: Text('Error: $e')));
+                  }
+                }
+              },
+              child: const Text('Enviar Pedido'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
@@ -95,6 +199,12 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
                         onChangeStatus: _changeStatus,
                       ),
                       const SizedBox(height: 16),
+                      _RequestPartsCard(
+                        wo: _wo!,
+                        auth: auth,
+                        onRequestPart: _showRequestPartForm,
+                      ),
+                      const SizedBox(height: 16),
                       _WODetails(wo: _wo!),
                       const SizedBox(height: 16),
                       _CommentsSection(
@@ -104,6 +214,11 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
                         controller: _commentCtrl,
                         sending: _sendingComment,
                         onSend: _sendComment,
+                      ),
+                      const SizedBox(height: 16),
+                      _RequestPartsSection(
+                        spareParts: _spareParts,
+                        onPartSelected: _showRequestPartForm,
                       ),
                     ],
                   ),
@@ -200,6 +315,147 @@ class _StatusActions extends StatelessWidget {
                   .toList(),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RequestPartsCard extends StatelessWidget {
+  final Map<String, dynamic> wo;
+  final AuthProvider auth;
+  final VoidCallback onRequestPart;
+  const _RequestPartsCard({
+    required this.wo,
+    required this.auth,
+    required this.onRequestPart,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final canRequest =
+        auth.hasAnyRole(['admin', 'maintenance_manager', 'technician', 'warehouse']);
+    if (!canRequest) return const SizedBox.shrink();
+
+    final status = wo['status'] as String? ?? '';
+    // Solo mostrar si la OT está en progreso o esperando repuestos
+    if (status != 'in_progress' && status != 'waiting_parts' && status != 'open' && status != 'assigned') {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Repuestos',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
+                label: const Text('Solicitar Repuesto al Depósito'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: BsaTheme.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: onRequestPart,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final String status;
+  const _StatusBadge({required this.status});
+
+  String get label {
+    const m = {
+      'open': 'Abierta',
+      'assigned': 'Asignada',
+      'in_progress': 'En Progreso',
+      'waiting_parts': 'Espera Repuestos',
+      'closed': 'Cerrada',
+      'cancelled': 'Cancelada',
+    };
+    return m[status] ?? status;
+  }
+
+  Color get color {
+    switch (status) {
+      case 'open': return const Color(0xFF2E86AB);
+      case 'assigned': return const Color(0xFF8E44AD);
+      case 'in_progress': return const Color(0xFFE67E22);
+      case 'waiting_parts': return const Color(0xFFF39C12);
+      case 'closed': return const Color(0xFF27AE60);
+      default: return Colors.grey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _PriorityBadge extends StatelessWidget {
+  final String priority;
+  const _PriorityBadge({required this.priority});
+
+  String get label {
+    const m = {
+      'low': 'Baja',
+      'medium': 'Media',
+      'high': 'Alta',
+      'critical': 'Crítica',
+    };
+    return m[priority] ?? priority;
+  }
+
+  Color get color {
+    switch (priority) {
+      case 'low': return Colors.grey;
+      case 'medium': return const Color(0xFF2E86AB);
+      case 'high': return Colors.orange;
+      case 'critical': return Colors.red;
+      default: return Colors.grey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: color,
         ),
       ),
     );
@@ -374,78 +630,6 @@ class _CommentBubble extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  final String status;
-  const _StatusBadge({required this.status});
-
-  Color get color {
-    switch (status) {
-      case 'open': return const Color(0xFF2E86AB);
-      case 'assigned': return const Color(0xFF8E44AD);
-      case 'in_progress': return const Color(0xFFE67E22);
-      case 'waiting_parts': return const Color(0xFFF39C12);
-      case 'closed': return const Color(0xFF27AE60);
-      default: return Colors.grey;
-    }
-  }
-
-  String get label {
-    const m = {
-      'open': 'Abierta', 'assigned': 'Asignada',
-      'in_progress': 'En Progreso', 'waiting_parts': 'Esp. Repuestos',
-      'closed': 'Cerrada', 'cancelled': 'Cancelada',
-    };
-    return m[status] ?? status;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 12, fontWeight: FontWeight.w600, color: color)),
-    );
-  }
-}
-
-class _PriorityBadge extends StatelessWidget {
-  final String priority;
-  const _PriorityBadge({required this.priority});
-
-  Color get color {
-    switch (priority) {
-      case 'critical': return const Color(0xFFC0392B);
-      case 'high': return const Color(0xFFE67E22);
-      case 'medium': return const Color(0xFF2E86AB);
-      default: return Colors.grey;
-    }
-  }
-
-  String get label {
-    const m = {'low': 'Baja', 'medium': 'Media', 'high': 'Alta', 'critical': 'Crítica'};
-    return m[priority] ?? priority;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 12, fontWeight: FontWeight.w600, color: color)),
     );
   }
 }

@@ -402,10 +402,12 @@ async def list_requests(
     db: AsyncSession = Depends(get_db),
 ):
     query = _load_req_query(current_user.company_id).order_by(SparePartRequest.created_at.desc())
-    user_roles = [ur.role for ur in current_user.user_roles]
+    user_roles = [ur.role.value if hasattr(ur.role, 'value') else str(ur.role) for ur in current_user.user_roles]
 
-    # Técnicos solo ven sus propios pedidos
-    if user_roles == ["technician"]:
+    # Técnicos (sin roles de gestión) solo ven sus propios pedidos
+    management_roles = {"admin", "maintenance_manager", "warehouse", "purchasing"}
+    has_management = any(r in management_roles for r in user_roles)
+    if not has_management and "technician" in user_roles:
         query = query.where(SparePartRequest.requested_by_id == current_user.id)
 
     result = await db.execute(query)
@@ -467,7 +469,7 @@ async def create_request(
 @requests_router.put("/{req_id}/approve", response_model=RequestOut)
 async def approve_request(
     req_id: int,
-    current_user: User = Depends(require_roles("admin", "warehouse")),
+    current_user: User = Depends(require_roles("admin", "warehouse", "maintenance_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
