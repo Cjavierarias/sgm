@@ -219,12 +219,6 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
                         sending: _sendingComment,
                         onSend: _sendComment,
                       ),
-                      const SizedBox(height: 16),
-                      _RequestPartsCard(
-                        wo: _wo!,
-                        auth: auth,
-                        onRequestPart: _showRequestPartForm,
-                      ),
                     ],
                   ),
                 ),
@@ -293,6 +287,7 @@ class _StatusActions extends StatelessWidget {
     if (status == 'open' || status == 'assigned')
       transitions['in_progress'] = 'Iniciar Trabajo';
     if (status == 'in_progress') transitions['waiting_parts'] = 'Esperar Repuestos';
+    if (status == 'waiting_parts') transitions['in_progress'] = 'Reanudar Trabajo';
     if (status == 'in_progress' || status == 'waiting_parts')
       transitions['closed'] = 'Cerrar OT';
     if (status != 'closed' && status != 'cancelled')

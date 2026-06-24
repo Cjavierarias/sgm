@@ -28,6 +28,7 @@ from app.routers.dashboard import router as dashboard_router
 from app.routers.spare_parts import router as sp_router
 from app.routers.spare_parts import requests_router as sp_req_router
 from app.routers.purchases import suppliers_router, po_router, invoices_router
+from app.routers.quote_requests import router as quote_router
 from app.routers.planning import router as planning_router
 from app.routers.billing import router as billing_router
 from app.routers.invitations import router as invitations_router
@@ -96,6 +97,7 @@ app.include_router(sp_req_router)
 app.include_router(suppliers_router)
 app.include_router(po_router)
 app.include_router(invoices_router)
+app.include_router(quote_router)
 app.include_router(planning_router)
 app.include_router(billing_router)
 app.include_router(invitations_router)

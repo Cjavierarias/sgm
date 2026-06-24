@@ -431,9 +431,27 @@ async def update_po_status(
     if not po:
         raise HTTPException(status_code=404, detail="Orden de compra no encontrada")
     try:
-        po.status = POStatus(payload.status)
+        new_status = POStatus(payload.status)
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Estado inválido: {payload.status}")
+
+    # Validar transiciones de estado
+    current = po.status.value if hasattr(po.status, 'value') else str(po.status)
+    valid_transitions = {
+        "draft": ["sent", "cancelled"],
+        "sent": ["partially_received", "received", "cancelled"],
+        "partially_received": ["received", "cancelled"],
+        "received": [],  # No se puede cambiar una OC recibida
+        "cancelled": [],  # No se puede reactivar una OC cancelada
+    }
+    allowed = valid_transitions.get(current, [])
+    if new_status.value not in allowed:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No se puede cambiar de '{current}' a '{new_status.value}'. Transiciones válidas: {allowed}"
+        )
+
+    po.status = new_status
     await db.commit()
     result = await db.execute(
         _load_po_query(current_user.company_id).where(PurchaseOrder.id == po_id)
@@ -477,7 +495,10 @@ async def receive_purchase_order(
         # Ingresar al stock si tiene repuesto asignado
         if item.spare_part_id:
             sp_result = await db.execute(
-                select(SparePart).where(SparePart.id == item.spare_part_id)
+                select(SparePart).where(
+                    SparePart.id == item.spare_part_id,
+                    SparePart.company_id == current_user.company_id,
+                )
             )
             sp = sp_result.scalars().first()
             if sp:

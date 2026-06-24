@@ -619,4 +619,48 @@ class ApiService {
     final r = await _dio.post('/export/$module/sheets');
     return r.data as Map<String, dynamic>;
   }
+
+  // ─── QUOTE REQUESTS ──────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getQuoteRequests({String? status}) async {
+    await _ensureInitialized();
+    final r = await _dio.get('/quote-requests/',
+        queryParameters: status != null ? {'status': status} : null);
+    return (r.data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> createQuoteRequest(
+      Map<String, dynamic> data) async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio.post('/quote-requests/', data: data);
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> quoteQuoteRequest(
+      int id, double price, String? notes) async {
+    await _ensureInitialized();
+    final r = await _dio.put('/quote-requests/$id/quote',
+        data: {'quoted_price': price, if (notes != null) 'notes': notes});
+    return r.data as Map<String, dynamic>;
+  }
+
+  Future<void> approveQuoteRequest(int id) async {
+    await _ensureInitialized();
+    await _dio.put('/quote-requests/$id/approve');
+  }
+
+  Future<void> rejectQuoteRequest(int id) async {
+    await _ensureInitialized();
+    await _dio.put('/quote-requests/$id/reject');
+  }
+
+  Future<Map<String, dynamic>> convertQuoteRequest(int id) async {
+    await _ensureInitialized();
+    final r = await _dio.post('/quote-requests/$id/convert');
+    return r.data as Map<String, dynamic>;
+  }
 }

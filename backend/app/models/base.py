@@ -94,6 +94,14 @@ class InvoiceStatus(PyEnum):
     overdue        = "overdue"
 
 
+class QuoteRequestStatus(PyEnum):
+    pending        = "pending"       # Esperando cotización del proveedor
+    quoted         = "quoted"        # Proveedor envió cotización
+    approved       = "approved"      # Jefe/Admin aprobó la cotización
+    rejected       = "rejected"      # Cotización rechazada
+    converted      = "converted"     # Convertida a Orden de Compra
+
+
 class MaintenanceFrequency(PyEnum):
     daily          = "daily"
     weekly         = "weekly"
@@ -421,6 +429,29 @@ class Invoice(Base):
     created_at          = Column(DateTime(timezone=True), default=datetime.utcnow)
 
     purchase_order: Optional["PurchaseOrder"] = relationship("PurchaseOrder", back_populates="invoices")
+
+
+class QuoteRequest(Base):
+    """Solicitud de cotización a proveedores (desde depósito/compras)."""
+    __tablename__ = "quote_requests"
+
+    id              = Column(Integer, primary_key=True, index=True)
+    company_id      = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
+    spare_part_id   = Column(Integer, ForeignKey("spare_parts.id", ondelete="SET NULL"), nullable=True, index=True)
+    supplier_id     = Column(Integer, ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True, index=True)
+    requested_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    description     = Column(String(500), nullable=False)  # Descripción del repuesto/insumo
+    quantity        = Column(Float, nullable=False)
+    unit            = Column(String(50), default="unidad")
+    status          = Column(SQLEnum(QuoteRequestStatus, name="quoterequeststatus", native_enum=False), default=QuoteRequestStatus.pending)
+    quoted_price    = Column(Float, nullable=True)         # Precio cotizado por el proveedor
+    notes           = Column(Text, nullable=True)
+    created_at      = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at      = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    spare_part:   Optional["SparePart"]  = relationship("SparePart")
+    supplier:     Optional["Supplier"]   = relationship("Supplier")
+    requested_by: Optional["User"]       = relationship("User")
 
 
 # ─────────────────────────────────────────────

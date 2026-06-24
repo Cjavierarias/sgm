@@ -565,6 +565,8 @@ async def reject_request(
     req = result.scalars().first()
     if not req:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    if req.status not in [RequestStatus.pending, RequestStatus.approved]:
+        raise HTTPException(status_code=400, detail="Solo se pueden rechazar pedidos pendientes o aprobados")
 
     req.status = RequestStatus.rejected
 
