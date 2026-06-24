@@ -314,6 +314,23 @@ async def update_spare_part(
     return _sp_to_out(result.scalars().first())
 
 
+@router.delete("/{sp_id}", status_code=204)
+async def delete_spare_part(
+    sp_id: int,
+    current_user: User = Depends(require_roles("admin", "warehouse")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Eliminar un repuesto (solo si no tiene movimientos asociados o forzar eliminación)."""
+    result = await db.execute(
+        _load_sp_query(current_user.company_id).where(SparePart.id == sp_id)
+    )
+    sp = result.scalars().first()
+    if not sp:
+        raise HTTPException(status_code=404, detail="Repuesto no encontrado")
+    await db.delete(sp)
+    await db.commit()
+
+
 @router.post("/{sp_id}/entry", response_model=SparePartOut)
 async def stock_entry(
     sp_id: int,

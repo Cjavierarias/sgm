@@ -452,6 +452,26 @@ async def update_po_status(
         )
 
     po.status = new_status
+
+    # Notificar al depósito cuando se envía una OC (draft → sent)
+    if current == "draft" and new_status.value == "sent":
+        users_result = await db.execute(
+            select(User).join(User.user_roles).where(
+                User.company_id == current_user.company_id,
+                User.is_active == True,
+            )
+        )
+        for u in users_result.scalars().all():
+            roles = [ur.role.value if hasattr(ur.role, 'value') else str(ur.role) for ur in u.user_roles]
+            if any(r in ('admin', 'warehouse') for r in roles):
+                n = Notification(
+                    user_id=u.id,
+                    title="📦 Nueva Orden de Compra",
+                    message=f"OC #{po.po_number or po.id} enviada. Próximamente para recibir en depósito.",
+                    link="/purchase-orders",
+                )
+                db.add(n)
+
     await db.commit()
     result = await db.execute(
         _load_po_query(current_user.company_id).where(PurchaseOrder.id == po_id)

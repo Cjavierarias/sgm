@@ -31,12 +31,64 @@ class _SparePartDetailScreenState extends State<SparePartDetailScreen> {
     }
   }
 
+  Future<void> _deleteSparePart() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar Repuesto'),
+        content: Text('¿Eliminar "${_part?['name']}" definitivamente?\n\nSe eliminarán también todos los movimientos y pedidos asociados.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      await auth.apiService.deleteSparePart(widget.partId);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  Future<void> _editSparePart() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SparePartFormScreen(part: _part),
+      ),
+    );
+    _load();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    final canEdit = auth.hasAnyRole(['admin', 'warehouse', 'maintenance_manager']);
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
       appBar: AppBar(
         title: Text(_part != null ? _part!['name'] as String : 'Repuesto'),
+        actions: [
+          if (canEdit)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: _editSparePart,
+            ),
+          if (canEdit)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: _deleteSparePart,
+            ),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -138,6 +190,10 @@ class _InfoCard extends StatelessWidget {
             const SizedBox(height: 12),
             _Row('Código', part['code'] as String? ?? ''),
             _Row('Ubicación', part['location'] as String? ?? 'Sin ubicación'),
+            if (part['sector'] != null)
+              _Row('Sector', part['sector'] as String),
+            if (part['equipment_name'] != null)
+              _Row('Equipo asociado', part['equipment_name'] as String),
             if (part['description'] != null)
               _Row('Descripción', part['description'] as String),
             if (part['unit_cost'] != null)
@@ -249,10 +305,11 @@ class _MovementsCard extends StatelessWidget {
   }
 }
 
-// ─── FORMULARIO NUEVO REPUESTO ────────────────────────────────────────────────
+// ─── FORMULARIO NUEVO/EDITAR REPUESTO ────────────────────────────────────────
 
 class SparePartFormScreen extends StatefulWidget {
-  const SparePartFormScreen({super.key});
+  final Map<String, dynamic>? part; // null = crear, != null = editar
+  const SparePartFormScreen({super.key, this.part});
   @override
   State<SparePartFormScreen> createState() => _SparePartFormScreenState();
 }
@@ -267,12 +324,43 @@ class _SparePartFormScreenState extends State<SparePartFormScreen> {
   final _minStockCtrl = TextEditingController(text: '0');
   final _locationCtrl = TextEditingController();
   final _costCtrl = TextEditingController();
+  final _sectorCtrl = TextEditingController();
+  List<Map<String, dynamic>> _equipments = [];
+  int? _equipmentId;
   bool _saving = false;
+  bool _isEdit = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isEdit = widget.part != null;
+    if (_isEdit) {
+      final p = widget.part!;
+      _codeCtrl.text = p['code'] as String? ?? '';
+      _nameCtrl.text = p['name'] as String? ?? '';
+      _descCtrl.text = p['description'] as String? ?? '';
+      _unitCtrl.text = p['unit'] as String? ?? 'unidad';
+      _stockCtrl.text = ((p['stock'] as num?)?.toDouble() ?? 0).toStringAsFixed(0);
+      _minStockCtrl.text = ((p['min_stock'] as num?)?.toDouble() ?? 0).toStringAsFixed(0);
+      _locationCtrl.text = p['location'] as String? ?? '';
+      _costCtrl.text = (p['unit_cost'] as num?)?.toString() ?? '';
+      _sectorCtrl.text = p['sector'] as String? ?? '';
+      _equipmentId = p['equipment_id'] as int?;
+    }
+    _loadEquipments();
+  }
+
+  Future<void> _loadEquipments() async {
+    try {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      _equipments = await auth.apiService.getEquipments();
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
     for (final c in [_codeCtrl, _nameCtrl, _descCtrl, _unitCtrl,
-        _stockCtrl, _minStockCtrl, _locationCtrl, _costCtrl]) {
+        _stockCtrl, _minStockCtrl, _locationCtrl, _costCtrl, _sectorCtrl]) {
       c.dispose();
     }
     super.dispose();
@@ -283,17 +371,24 @@ class _SparePartFormScreenState extends State<SparePartFormScreen> {
     setState(() => _saving = true);
     try {
       final auth = Provider.of<AuthProvider>(context, listen: false);
-      await auth.apiService.createSparePart({
+      final data = {
         'code': _codeCtrl.text.trim(),
         'name': _nameCtrl.text.trim(),
         'description': _descCtrl.text.trim(),
         'unit': _unitCtrl.text.trim(),
-        'stock': double.tryParse(_stockCtrl.text) ?? 0,
         'min_stock': double.tryParse(_minStockCtrl.text) ?? 0,
         'location': _locationCtrl.text.trim(),
+        'sector': _sectorCtrl.text.trim(),
+        if (_equipmentId != null) 'equipment_id': _equipmentId,
         if (_costCtrl.text.isNotEmpty)
           'unit_cost': double.tryParse(_costCtrl.text),
-      });
+      };
+      if (_isEdit) {
+        await auth.apiService.updateSparePart(widget.part!['id'] as int, data);
+      } else {
+        data['stock'] = double.tryParse(_stockCtrl.text) ?? 0;
+        await auth.apiService.createSparePart(data);
+      }
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
@@ -308,7 +403,7 @@ class _SparePartFormScreenState extends State<SparePartFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nuevo Repuesto')),
+      appBar: AppBar(title: Text(_isEdit ? 'Editar Repuesto' : 'Nuevo Repuesto')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -367,15 +462,17 @@ class _SparePartFormScreenState extends State<SparePartFormScreen> {
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _stockCtrl,
-                              decoration: const InputDecoration(
-                                  labelText: 'Stock inicial'),
-                              keyboardType: TextInputType.number,
+                          if (!_isEdit)
+                            Expanded(
+                              child: TextFormField(
+                                controller: _stockCtrl,
+                                decoration: const InputDecoration(
+                                    labelText: 'Stock inicial'),
+                                keyboardType: TextInputType.number,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
+                          if (_isEdit) const SizedBox(width: 0),
+                          if (!_isEdit) const SizedBox(width: 12),
                           Expanded(
                             child: TextFormField(
                               controller: _minStockCtrl,
@@ -387,23 +484,60 @@ class _SparePartFormScreenState extends State<SparePartFormScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _locationCtrl,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _locationCtrl,
+                              decoration: const InputDecoration(
+                                  labelText: 'Ubicación en depósito',
+                                  hintText: 'Ej: Estante A-3'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _sectorCtrl,
+                              decoration: const InputDecoration(
+                                  labelText: 'Sector',
+                                  hintText: 'mecánica, eléctrica...'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<int?>(
+                        value: _equipmentId,
                         decoration: const InputDecoration(
-                            labelText: 'Ubicación en depósito',
-                            hintText: 'Ej: Estante A-3'),
+                            labelText: 'Equipo asociado (opcional)'),
+                        items: [
+                          const DropdownMenuItem(value: null, child: Text('Sin equipo')),
+                          ..._equipments.map((e) => DropdownMenuItem(
+                              value: e['id'] as int,
+                              child: Text(e['name'] as String))),
+                        ],
+                        onChanged: (v) => setState(() => _equipmentId = v),
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              _saving
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: _save,
-                      child: const Text('Guardar Repuesto'),
-                    ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _save,
+                  child: _saving
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(_isEdit ? 'Guardar Cambios' : 'Crear Repuesto'),
+                ),
+              ),
             ],
           ),
         ),

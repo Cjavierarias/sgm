@@ -282,6 +282,23 @@ class ApiService {
       _handleDioError(e);
     }
   }
+
+  Future<Map<String, dynamic>> updateSparePart(
+      int id, Map<String, dynamic> data) async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio.put('/spare-parts/$id', data: data);
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  Future<void> deleteSparePart(int id) async {
+    await _ensureInitialized();
+    await _dio.delete('/spare-parts/$id');
+  }
+
   Future<Map<String, dynamic>> sparePartEntry(
       int id, double qty, String? notes) async {
     await _ensureInitialized();
