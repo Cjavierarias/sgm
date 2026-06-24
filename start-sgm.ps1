@@ -46,7 +46,7 @@ OK "Puertos liberados."
 # ── 2. Iniciar Backend en nueva ventana CMD ───────────────────
 Info "Iniciando Backend FastAPI (puerto $BackendPort)..."
 
-$backendCmd = "title SGM Backend & call `"$CondaBase\Scripts\activate.bat`" $CondaEnv & cd /d `"$Root\backend`" & set ALLOWED_ORIGINS=http://localhost:8080,http://127.0.0.1:8080 & pip install -r requirements.txt -q & uvicorn app.main:app --reload --host 0.0.0.0 --port $BackendPort"
+$backendCmd = "title SGM Backend & cd /d `"$Root\backend`" & `"$CondaBase\envs\$CondaEnv\python.exe`" -m uvicorn app.main:app --reload --host 0.0.0.0 --port $BackendPort"
 
 Start-Process "cmd.exe" -ArgumentList "/k", $backendCmd
 

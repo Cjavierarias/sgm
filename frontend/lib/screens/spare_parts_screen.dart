@@ -22,7 +22,7 @@ class _SparePartsScreenState extends State<SparePartsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _load();
   }
 
@@ -104,6 +104,16 @@ class _SparePartsScreenState extends State<SparePartsScreen>
                 ],
               ),
             ),
+            Tab(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.compare_arrows_rounded, size: 18),
+                  const SizedBox(width: 6),
+                  const Text('Movimientos'),
+                ],
+              ),
+            ),
           ],
         ),
         actions: [
@@ -119,7 +129,7 @@ class _SparePartsScreenState extends State<SparePartsScreen>
                   await Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const SparePartFormScreen()));
+                          builder: (_) => const SparePartFormScreen(),
                   _load();
                 },
               ),
@@ -142,6 +152,11 @@ class _SparePartsScreenState extends State<SparePartsScreen>
                   requests: _requests,
                   onRefresh: _load,
                   auth: auth,
+                ),
+                _MovementsTab(
+                  parts: _parts,
+                  auth: auth,
+                  onRefresh: _load,
                 ),
               ],
             ),
@@ -699,4 +714,278 @@ class _RequestsTab extends StatelessWidget {
             ),
     );
   }
+}
+
+// ─── Tab Movimientos (Entregas/Ingresos Batch) ────────────────────────────────
+
+class _MovementsTab extends StatefulWidget {
+  final List<Map<String, dynamic>> parts;
+  final AuthProvider auth;
+  final VoidCallback onRefresh;
+  const _MovementsTab(
+      {required this.parts, required this.auth, required this.onRefresh});
+
+  @override
+  State<_MovementsTab> createState() => _MovementsTabState();
+}
+
+class _MovementsTabState extends State<_MovementsTab> {
+  final _items = <_BatchItem>[];
+
+  @override
+  Widget build(BuildContext context) {
+    final canManage =
+        widget.auth.hasAnyRole(['admin', 'warehouse', 'maintenance_manager']);
+    if (!canManage) {
+      return const Center(child: Text('Sin permisos para gestionar movimientos'));
+    }
+
+    if (widget.parts.isEmpty) {
+      return const Center(child: Text('No hay repuestos para mover. Creá uno primero.'));
+    }
+
+    return Column(
+      children: [
+        // Selector del tipo de movimiento
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.add_circle_outline, size: 18),
+                  label: const Text('Entrada de Stock'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () => _showBatchForm(context, 'entry'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.remove_circle_outline, size: 18),
+                  label: const Text('Salida / Entrega'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () => _showBatchForm(context, 'exit'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            children: [
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Instrucciones',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
+                      SizedBox(height: 8),
+                      Text(
+                        '• Usá "Entrada de Stock" para registrar ingreso de mercadería '
+                        '(compras, devoluciones, ajustes).',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '• Usá "Salida / Entrega" para registrar entrega de repuestos '
+                        'a técnicos, sectores u otros destinos.',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '• Podés mover múltiples artículos en una sola operación.',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showBatchForm(BuildContext context, String type) async {
+    _items.clear();
+    _items.add(_BatchItem());
+
+    final notesCtrl = TextEditingController();
+    final isEntry = type == 'entry';
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          title: Text(isEntry ? 'Entrada de Stock' : 'Salida / Entrega'),
+          content: SizedBox(
+            width: 400,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isEntry
+                        ? 'Registrar ingreso de uno o más repuestos'
+                        : 'Registrar entrega de uno o más repuestos',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 16),
+                  ..._items.asMap().entries.map((entry) {
+                    final idx = entry.key;
+                    final item = entry.value;
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: DropdownButtonFormField<int>(
+                                    value: item.sparePartId,
+                                    decoration: const InputDecoration(
+                                        labelText: 'Repuesto *',
+                                        contentPadding:
+                                            EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
+                                    isExpanded: true,
+                                    items: widget.parts
+                                        .map((p) => DropdownMenuItem(
+                                              value: p['id'] as int,
+                                              child: Text(
+                                                  '${p['code']} - ${p['name']} (${p['stock']} ${p['unit']})',
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: const TextStyle(fontSize: 13)),
+                                            ))
+                                        .toList(),
+                                    onChanged: (v) => setD(() => item.sparePartId = v),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 80,
+                                  child: TextFormField(
+                                    initialValue: item.quantity.toString(),
+                                    decoration: const InputDecoration(
+                                        labelText: 'Cant.',
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
+                                    keyboardType: TextInputType.number,
+                                    onChanged: (v) =>
+                                        setD(() => item.quantity = double.tryParse(v) ?? 1),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              initialValue: item.notes,
+                              decoration: InputDecoration(
+                                  labelText: 'Notas (opcional)',
+                                  hintText: isEntry ? 'Ej: Recepción OC #123' : 'Ej: Entregado a técnico',
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
+                              onChanged: (v) => setD(() => item.notes = v),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text('Agregar otro artículo'),
+                    onPressed: () => setD(() => _items.add(_BatchItem())),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: notesCtrl,
+                    decoration: const InputDecoration(
+                        labelText: 'Nota general (opcional)',
+                        hintText: 'Ej: Recepción semanal'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancelar')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: isEntry ? Colors.green : Colors.red),
+              onPressed: () async {
+                final validItems = _items
+                    .where((i) => i.sparePartId != null && i.quantity > 0)
+                    .map((i) => {
+                          'spare_part_id': i.sparePartId,
+                          'quantity': i.quantity,
+                          if (i.notes != null && i.notes!.isNotEmpty)
+                            'notes': i.notes,
+                        })
+                    .toList();
+                if (validItems.isEmpty) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('Agregá al menos un artículo con cantidad válida')));
+                  return;
+                }
+                // Agregar nota general a cada item si no tiene notas específicas
+                if (notesCtrl.text.isNotEmpty) {
+                  for (final item in validItems) {
+                    if (item['notes'] == null) {
+                      item['notes'] = notesCtrl.text;
+                    }
+                  }
+                }
+                try {
+                  final result = await widget.auth.apiService
+                      .batchSparePartMovement(type, validItems);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  widget.onRefresh();
+                  if (ctx.mounted) {
+                    final r = result;
+                    final errors = r['errors'] as List? ?? [];
+                    final msg = errors.isEmpty
+                        ? '✅ ${r['processed']} artículo(s) procesado(s)'
+                        : '⚠️ ${r['processed']} procesado(s), ${errors.length} error(es):\n${errors.join('\n')}';
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(msg)));
+                  }
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(content: Text('Error: $e')));
+                  }
+                }
+              },
+              child: Text(isEntry ? 'Registrar Entrada' : 'Registrar Salida'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BatchItem {
+  int? sparePartId;
+  double quantity = 1;
+  String? notes;
+
+  _BatchItem({this.sparePartId, this.quantity = 1, this.notes});
 }

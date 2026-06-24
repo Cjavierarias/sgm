@@ -347,6 +347,22 @@ class ApiService {
     await _dio.put('/spare-part-requests/$id/reject');
   }
 
+  // ─── BATCH MOVEMENT ──────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> batchSparePartMovement(
+      String movementType, List<Map<String, dynamic>> items) async {
+    await _ensureInitialized();
+    try {
+      final r = await _dio.post('/spare-parts/batch-movement', data: {
+        'movement_type': movementType,
+        'items': items,
+      });
+      return r.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
   // ─── SUPPLIERS ───────────────────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> getSuppliers() async {

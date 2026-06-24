@@ -331,6 +331,70 @@ async def delete_spare_part(
     await db.commit()
 
 
+# ─── Batch operations ────────────────────────────────────────────────────────
+
+class BatchMovementItem(BaseModel):
+    spare_part_id: int
+    quantity: float
+    notes: Optional[str] = None
+
+
+class BatchMovementIn(BaseModel):
+    movement_type: str  # "entry" | "exit"
+    items: List[BatchMovementItem]
+
+
+class BatchMovementResult(BaseModel):
+    processed: int
+    errors: List[str] = []
+
+
+@router.post("/batch-movement", response_model=BatchMovementResult)
+async def batch_stock_movement(
+    payload: BatchMovementIn,
+    current_user: User = Depends(require_roles("admin", "warehouse")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Registrar entrada o salida de stock de múltiples artículos a la vez."""
+    if payload.movement_type not in ("entry", "exit"):
+        raise HTTPException(status_code=400, detail="Tipo de movimiento inválido. Usar 'entry' o 'exit'")
+
+    result = BatchMovementResult(processed=0, errors=[])
+
+    for item in payload.items:
+        sp_result = await db.execute(
+            _load_sp_query(current_user.company_id).where(SparePart.id == item.spare_part_id)
+        )
+        sp = sp_result.scalars().first()
+        if not sp:
+            result.errors.append(f"Repuesto ID {item.spare_part_id} no encontrado")
+            continue
+
+        if payload.movement_type == "exit" and sp.stock < item.quantity:
+            result.errors.append(
+                f"Stock insuficiente para '{sp.name}': disponible {sp.stock}, solicitado {item.quantity}"
+            )
+            continue
+
+        if payload.movement_type == "entry":
+            sp.stock += item.quantity
+        else:
+            sp.stock -= item.quantity
+
+        mov = StockMovement(
+            spare_part_id=sp.id,
+            user_id=current_user.id,
+            movement_type=MovementType.entry if payload.movement_type == "entry" else MovementType.exit,
+            quantity=item.quantity,
+            notes=item.notes or f"Movimiento batch ({payload.movement_type})",
+        )
+        db.add(mov)
+        result.processed += 1
+
+    await db.commit()
+    return result
+
+
 @router.post("/{sp_id}/entry", response_model=SparePartOut)
 async def stock_entry(
     sp_id: int,

@@ -40,8 +40,15 @@ from app.scheduler import start_scheduler, stop_scheduler
 limiter = Limiter(key_func=get_remote_address)
 
 # ─── CORS: orígenes permitidos desde variable de entorno ──────────────────────
-_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:8080,http://localhost:3000,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173")
-ALLOWED_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "")
+# En desarrollo, si no hay .env, permitir todos los orígenes (seguro para localhost)
+_ENV_EXISTS = _ENV_FILE.exists()
+if not _raw_origins and not _ENV_EXISTS:
+    _raw_origins = "*"
+    import warnings
+    warnings.warn("⚠️  Modo desarrollo: CORS abierto (ALLOWED_ORIGINS=*). "
+                   "Definí ALLOWED_ORIGINS en .env para producción.")
+ALLOWED_ORIGINS: list[str] = ["*"] if _raw_origins == "*" else [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 app = FastAPI(
     title="SGM API — BSA Consultora",
@@ -58,7 +65,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=False if ALLOWED_ORIGINS == ["*"] else True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
