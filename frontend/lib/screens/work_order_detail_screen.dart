@@ -33,14 +33,18 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
     setState(() => _loading = true);
     try {
       final auth = Provider.of<AuthProvider>(context, listen: false);
-      final results = await Future.wait([
-        auth.apiService.getWorkOrder(widget.woId),
-        auth.apiService.getSpareParts(),
-      ]);
+      final woData = await auth.apiService.getWorkOrder(widget.woId);
+      // Cargar repuestos por separado — si falla no debe bloquear la OT
+      List<Map<String, dynamic>> parts = [];
+      try {
+        parts = await auth.apiService.getSpareParts();
+      } catch (_) {
+        // Si falla la carga de repuestos, simplemente no mostramos el botón
+      }
       if (mounted) {
         setState(() {
-          _wo = results[0] as Map<String, dynamic>;
-          _spareParts = results[1] as List<Map<String, dynamic>>;
+          _wo = woData;
+          _spareParts = parts;
           _loading = false;
         });
       }
@@ -216,9 +220,10 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
                         onSend: _sendComment,
                       ),
                       const SizedBox(height: 16),
-                      _RequestPartsSection(
-                        spareParts: _spareParts,
-                        onPartSelected: _showRequestPartForm,
+                      _RequestPartsCard(
+                        wo: _wo!,
+                        auth: auth,
+                        onRequestPart: _showRequestPartForm,
                       ),
                     ],
                   ),
