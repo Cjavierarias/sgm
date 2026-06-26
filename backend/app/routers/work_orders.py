@@ -340,7 +340,7 @@ async def update_status(
     # Si pasó a "waiting_parts" → avisar a depósito
     if new_status == WOStatus.waiting_parts and old_status != WOStatus.waiting_parts:
         warehouse_users = await db.execute(
-            select(User).join(User.user_roles).where(
+            select(User).options(selectinload(User.user_roles)).join(User.user_roles).where(
                 User.company_id == current_user.company_id,
                 User.is_active == True,
             )

@@ -456,7 +456,7 @@ async def update_po_status(
     # Notificar al depósito cuando se envía una OC (draft → sent)
     if current == "draft" and new_status.value == "sent":
         users_result = await db.execute(
-            select(User).join(User.user_roles).where(
+            select(User).options(selectinload(User.user_roles)).join(User.user_roles).where(
                 User.company_id == current_user.company_id,
                 User.is_active == True,
             )

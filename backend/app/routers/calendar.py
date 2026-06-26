@@ -147,19 +147,27 @@ async def share_calendar_with_user(
     current_user: User = Depends(require_roles("admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Comparte el calendario de la empresa con un usuario por email."""
+    """Comparte el calendario de la empresa con un usuario existente."""
+    # Buscar usuario por user_id para obtener su email
+    result = await db.execute(
+        select(User).where(User.id == user_id, User.company_id == current_user.company_id)
+    )
+    target_user = result.scalars().first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado en tu empresa")
+
     result = await db.execute(select(Company).where(Company.id == current_user.company_id))
     company = result.scalars().first()
     if not company or not company.google_workspace_id:
         raise HTTPException(status_code=400, detail="La empresa no tiene calendario de Google configurado")
 
     ok = gc_service.share_calendar_with_user(
-        company.google_workspace_id, payload.user_email, payload.role
+        company.google_workspace_id, target_user.email, payload.role
     )
     if not ok:
         raise HTTPException(status_code=502, detail="No se pudo compartir el calendario")
 
-    return {"message": f"Calendario compartido con {payload.user_email} como {payload.role}"}
+    return {"message": f"Calendario compartido con {target_user.email} como {payload.role}"}
 
 
 @router.post("/maintenance-plans/{plan_id}/sync", response_model=CalendarEventOut)
@@ -170,9 +178,11 @@ async def sync_plan_to_calendar(
 ):
     """Sincroniza un plan de mantenimiento con Google Calendar (crea o actualiza evento)."""
     result = await db.execute(
-        select(MaintenancePlan).where(
+        select(MaintenancePlan)
+        .join(Equipment, MaintenancePlan.equipment_id == Equipment.id)
+        .where(
             MaintenancePlan.id == plan_id,
-            MaintenancePlan.company_id == current_user.company_id,
+            Equipment.company_id == current_user.company_id,
         )
     )
     plan = result.scalars().first()
@@ -197,7 +207,7 @@ async def sync_plan_to_calendar(
     existing_event = result.scalars().first()
 
     # Calcular próxima fecha
-    next_date = plan.next_date if plan.next_date else datetime.now(timezone.utc) + timedelta(days=7)
+    next_date = plan.next_due if plan.next_due else datetime.now(timezone.utc) + timedelta(days=7)
     if hasattr(next_date, "astimezone"):
         start_at = next_date
     else:

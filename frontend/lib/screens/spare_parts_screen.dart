@@ -127,9 +127,11 @@ class _SparePartsScreenState extends State<SparePartsScreen>
                     ElevatedButton.styleFrom(minimumSize: const Size(0, 36)),
                 onPressed: () async {
                   await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const SparePartFormScreen(),
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SparePartFormScreen(),
+                    ),
+                  );
                   _load();
                 },
               ),
@@ -691,19 +693,23 @@ class _RequestsTab extends StatelessWidget {
                         ],
                         if (canManage && status == 'approved') ...[
                           const SizedBox(height: 10),
-                          OutlinedButton.icon(
-                            icon: const Icon(Icons.local_shipping_rounded,
-                                size: 16),
-                            label: const Text('Marcar Entregado'),
-                            style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.green),
-                            onPressed: () async {
-                              await Provider.of<AuthProvider>(context,
-                                      listen: false)
-                                  .apiService
-                                  .deliverSparePartRequest(req['id'] as int);
-                              onRefresh();
-                            },
+                          Row(
+                            children: [
+                              OutlinedButton.icon(
+                                icon: const Icon(Icons.local_shipping_rounded,
+                                    size: 16),
+                                label: const Text('Marcar Entregado'),
+                                style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.green),
+                                onPressed: () async {
+                                  await Provider.of<AuthProvider>(context,
+                                          listen: false)
+                                      .apiService
+                                      .deliverSparePartRequest(req['id'] as int);
+                                  onRefresh();
+                                },
+                              ),
+                            ],
                           ),
                         ],
                       ],
@@ -731,91 +737,189 @@ class _MovementsTab extends StatefulWidget {
 
 class _MovementsTabState extends State<_MovementsTab> {
   final _items = <_BatchItem>[];
+  List<Map<String, dynamic>> _movements = [];
+  bool _loadingMovements = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMovements();
+  }
+
+  Future<void> _loadMovements() async {
+    setState(() => _loadingMovements = true);
+    try {
+      _movements = await widget.auth.apiService.getMovementHistory(days: 30);
+    } catch (_) {
+      _movements = [];
+    }
+    if (mounted) setState(() => _loadingMovements = false);
+  }
+
+  @override
+  void didUpdateWidget(covariant _MovementsTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.onRefresh != oldWidget.onRefresh) _loadMovements();
+  }
+
+  Color _movementColor(String type) {
+    switch (type) {
+      case 'entry':
+        return Colors.green;
+      case 'exit':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final canManage =
         widget.auth.hasAnyRole(['admin', 'warehouse', 'maintenance_manager']);
-    if (!canManage) {
-      return const Center(child: Text('Sin permisos para gestionar movimientos'));
-    }
-
-    if (widget.parts.isEmpty) {
-      return const Center(child: Text('No hay repuestos para mover. Creá uno primero.'));
-    }
 
     return Column(
       children: [
-        // Selector del tipo de movimiento
+        if (canManage && widget.parts.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.add_circle_outline, size: 18),
+                    label: const Text('Entrada de Stock'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () => _showBatchForm(context, 'entry'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.remove_circle_outline, size: 18),
+                    label: const Text('Salida / Entrega'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () => _showBatchForm(context, 'exit'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        // ── Historial diario ──────────────────────────────────────────────
+        Expanded(
+          child: _loadingMovements
+              ? const Center(child: CircularProgressIndicator())
+              : _movements.isEmpty
+                  ? const Center(child: Text('No hay movimientos registrados'))
+                  : _buildHistoryList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHistoryList() {
+    // Agrupar por fecha (día)
+    final grouped = <String, List<Map<String, dynamic>>>{};
+    for (final m in _movements) {
+      final dt = DateTime.parse(m['created_at'] as String);
+      final key = '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+      grouped.putIfAbsent(key, () => []).add(m);
+    }
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      children: [
         Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.add_circle_outline, size: 18),
-                  label: const Text('Entrada de Stock'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: () => _showBatchForm(context, 'entry'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.remove_circle_outline, size: 18),
-                  label: const Text('Salida / Entrega'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: () => _showBatchForm(context, 'exit'),
-                ),
-              ),
-            ],
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text('Historial de movimientos (últimos 30 días)',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey[700]),
           ),
         ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            children: [
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        ...grouped.entries.map((entry) {
+          final dayMovements = entry.value;
+          // Calcular resumen del día
+          double entries = 0, exits = 0;
+          for (final m in dayMovements) {
+            if (m['movement_type'] == 'entry') entries += (m['quantity'] as num).toDouble();
+            else exits += (m['quantity'] as num).toDouble();
+          }
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Text('Instrucciones',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 14)),
-                      SizedBox(height: 8),
-                      Text(
-                        '• Usá "Entrada de Stock" para registrar ingreso de mercadería '
-                        '(compras, devoluciones, ajustes).',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '• Usá "Salida / Entrega" para registrar entrega de repuestos '
-                        'a técnicos, sectores u otros destinos.',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '• Podés mover múltiples artículos en una sola operación.',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
+                      Text(entry.key,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      const Spacer(),
+                      if (entries > 0)
+                        Text('+$entries  ', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600, fontSize: 12)),
+                      if (exits > 0)
+                        Text('-$exits', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600, fontSize: 12)),
                     ],
                   ),
-                ),
+                  const Divider(height: 12),
+                  ...dayMovements.map((m) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _movementColor(m['movement_type'] as String).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            m['movement_type'] == 'entry' ? 'ENT' : 'SAL',
+                            style: TextStyle(
+                              fontSize: 10, fontWeight: FontWeight.bold,
+                              color: _movementColor(m['movement_type'] as String),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${m['spare_part_name'] ?? 'N/A'} (${m['spare_part_code'] ?? ''})',
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                              if (m['notes'] != null)
+                                Text(m['notes'] as String,
+                                    style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${(m['quantity'] as num).toStringAsFixed(0)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13,
+                            color: _movementColor(m['movement_type'] as String),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        }),
       ],
     );
   }

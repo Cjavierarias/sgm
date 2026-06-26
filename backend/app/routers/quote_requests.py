@@ -154,7 +154,7 @@ async def create_quote_request(
 
     # Notificar a compras y admin
     users_result = await db.execute(
-        select(User).join(User.user_roles).where(
+        select(User).options(selectinload(User.user_roles)).join(User.user_roles).where(
             User.company_id == current_user.company_id,
             User.is_active == True,
         )
@@ -239,7 +239,7 @@ async def approve_quote_request(
 
     # Notificar a compras
     users_result = await db.execute(
-        select(User).join(User.user_roles).where(
+        select(User).options(selectinload(User.user_roles)).join(User.user_roles).where(
             User.company_id == current_user.company_id,
             User.is_active == True,
         )

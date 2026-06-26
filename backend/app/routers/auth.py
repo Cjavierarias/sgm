@@ -475,6 +475,12 @@ async def google_auth(
     await db.flush()
 
     db.add(UserRole(user_id=new_user.id, role=RoleName.admin))
+    await db.flush()
+
+    # Crear suscripción en trial (30 días gratis) igual que en registro estándar
+    from app.services.billing import create_trial_subscription
+    await create_trial_subscription(db, company.id, email)
+
     await db.commit()
 
     result = await db.execute(

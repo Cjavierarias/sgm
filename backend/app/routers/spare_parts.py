@@ -395,6 +395,49 @@ async def batch_stock_movement(
     return result
 
 
+# ─── Movement History ─────────────────────────────────────────────────────────
+
+class MovementHistoryOut(MovementOut):
+    spare_part_name: Optional[str] = None
+    spare_part_code: Optional[str] = None
+
+
+@router.get("/movements", response_model=List[MovementHistoryOut])
+async def list_movements(
+    days: int = 7,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Historial de movimientos de stock (entradas/salidas) de la empresa."""
+    from datetime import timedelta
+    from sqlalchemy import desc
+
+    since = datetime.utcnow() - timedelta(days=days)
+    result = await db.execute(
+        select(StockMovement)
+        .join(SparePart, StockMovement.spare_part_id == SparePart.id)
+        .where(
+            SparePart.company_id == current_user.company_id,
+            StockMovement.created_at >= since,
+        )
+        .options(selectinload(StockMovement.user), selectinload(StockMovement.spare_part))
+        .order_by(desc(StockMovement.created_at))
+    )
+    out = []
+    for m in result.scalars().all():
+        out.append(MovementHistoryOut(
+            id=m.id,
+            movement_type=m.movement_type if isinstance(m.movement_type, str) else m.movement_type.value,
+            quantity=m.quantity,
+            notes=m.notes,
+            created_at=m.created_at,
+            user_name=(m.user.full_name or m.user.email) if m.user else None,
+            spare_part_name=m.spare_part.name if m.spare_part else None,
+            spare_part_code=m.spare_part.code if m.spare_part else None,
+        ))
+    return out
+
+
 @router.post("/{sp_id}/entry", response_model=SparePartOut)
 async def stock_entry(
     sp_id: int,
@@ -456,7 +499,7 @@ async def stock_exit(
     if sp.stock <= sp.min_stock:
         # Notificar a todos los admin/warehouse de la empresa
         admins = await db.execute(
-            select(User).join(User.user_roles).where(
+            select(User).options(selectinload(User.user_roles)).join(User.user_roles).where(
                 User.company_id == current_user.company_id,
             )
         )
@@ -526,7 +569,7 @@ async def create_request(
 
     # Notificar al depósito
     warehouse_users = await db.execute(
-        select(User).join(User.user_roles).where(
+        select(User).options(selectinload(User.user_roles)).join(User.user_roles).where(
             User.company_id == current_user.company_id,
         )
     )

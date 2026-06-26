@@ -363,6 +363,14 @@ class ApiService {
     }
   }
 
+  // ─── MOVEMENT HISTORY ────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getMovementHistory({int days = 7}) async {
+    await _ensureInitialized();
+    final r = await _dio.get('/spare-parts/movements', queryParameters: {'days': days});
+    return (r.data as List).cast<Map<String, dynamic>>();
+  }
+
   // ─── SUPPLIERS ───────────────────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> getSuppliers() async {

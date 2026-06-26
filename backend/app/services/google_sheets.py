@@ -260,8 +260,8 @@ def export_maintenance_plans(plans: list[dict], company_name: str, admin_email: 
             p.get("equipment_name", ""),
             p.get("title", ""),
             p.get("frequency", ""),
-            p.get("interval_value", ""),
-            p.get("next_date", ""),
+            p.get("frequency_value", ""),
+            p.get("next_due", ""),
             "SÍ" if p.get("is_active") else "NO",
             p.get("description", ""),
         ])

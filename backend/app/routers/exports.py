@@ -16,7 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.base import Company, Equipment, MaintenancePlan, SparePart, WorkOrder
+from app.models.base import Company, Equipment, MaintenancePlan, SparePart, User, WorkOrder
 from app.models.collaboration import ExportLog
 from app.routers.auth import require_roles
 from app.services import google_sheets as sheets_service
@@ -46,9 +46,7 @@ async def _get_company(db: AsyncSession, company_id: int) -> Company:
 
 
 async def _get_admin_email(db: AsyncSession, user_id: int) -> str:
-    result = await db.execute(select(WorkOrder).where(WorkOrder.id == user_id))
-    # En realidad necesitamos el email del admin actual
-    from app.models.base import User
+    """Obtiene el email de un usuario por su ID."""
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalars().first()
     return user.email if user else ""
@@ -101,11 +99,12 @@ async def export_module_to_sheets(
         items = [
             {
                 "id": sp.id, "code": sp.code, "name": sp.name,
-                "brand": getattr(sp, "brand", ""), "model": getattr(sp, "model", ""),
-                "current_stock": sp.current_stock, "min_stock": sp.min_stock,
-                "location": getattr(sp, "location", ""),
-                "unit_cost": getattr(sp, "unit_cost", ""),
-                "is_low_stock": sp.current_stock <= sp.min_stock if sp.min_stock else False,
+                "brand": sp.equipment.brand if sp.equipment else "",
+                "model": sp.equipment.model if sp.equipment else "",
+                "current_stock": sp.stock, "min_stock": sp.min_stock,
+                "location": sp.location or "",
+                "unit_cost": sp.unit_cost or "",
+                "is_low_stock": sp.stock <= sp.min_stock if sp.min_stock else False,
             }
             for sp in result.scalars().all()
         ]
@@ -130,15 +129,17 @@ async def export_module_to_sheets(
 
     elif module == "maintenance-plans":
         result = await db.execute(
-            select(MaintenancePlan).where(MaintenancePlan.company_id == current_user.company_id)
+            select(MaintenancePlan)
+            .join(Equipment, MaintenancePlan.equipment_id == Equipment.id)
+            .where(Equipment.company_id == current_user.company_id)
         )
         items = [
             {
                 "id": p.id, "title": p.title,
                 "frequency": p.frequency.value if hasattr(p.frequency, "value") else str(p.frequency),
-                "interval_value": getattr(p, "interval_value", ""),
-                "next_date": p.next_date.strftime("%Y-%m-%d") if getattr(p, "next_date", None) else "",
-                "is_active": getattr(p, "is_active", True),
+                "frequency_value": p.frequency_value,
+                "next_due": p.next_due.strftime("%Y-%m-%d") if p.next_due else "",
+                "is_active": p.is_active,
                 "description": p.description or "",
             }
             for p in result.scalars().all()
