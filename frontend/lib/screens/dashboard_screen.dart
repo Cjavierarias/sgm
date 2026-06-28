@@ -92,7 +92,7 @@ class _Header extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: BsaTheme.primary.withOpacity(0.25),
+            color: BsaTheme.primary.withValues(alpha: 0.25),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -118,7 +118,7 @@ class _Header extends StatelessWidget {
                   'Panel de control — ${AppConfig.companyName}',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -128,7 +128,7 @@ class _Header extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -264,7 +264,7 @@ class _SummaryCard extends StatelessWidget {
                   Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 12,
-                    color: BsaTheme.textSecondary.withOpacity(0.4),
+                    color: BsaTheme.textSecondary.withValues(alpha: 0.4),
                   ),
                 ],
               ),
@@ -423,7 +423,7 @@ class _ActionButton extends StatelessWidget {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: c.withOpacity(0.1),
+                  color: c.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Icon(icon, size: 15, color: c),
@@ -431,7 +431,7 @@ class _ActionButton extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 label,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w600,
                   color: BsaTheme.textPrimary,
@@ -455,9 +455,9 @@ class _ErrorCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: BsaTheme.error.withOpacity(0.05),
+        color: BsaTheme.error.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: BsaTheme.error.withOpacity(0.2)),
+        border: Border.all(color: BsaTheme.error.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [

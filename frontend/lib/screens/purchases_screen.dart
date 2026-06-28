@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../main.dart' show BsaTheme;
 import '../providers/auth_provider.dart';
@@ -203,7 +202,7 @@ class _PurchasesScreenState extends State<PurchasesScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   DropdownButtonFormField<int?>(
-                    value: supplierId,
+                    initialValue: supplierId,
                     decoration: const InputDecoration(labelText: 'Proveedor (opcional)'),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('Sin proveedor')),
@@ -460,7 +459,7 @@ class _PurchasesScreenState extends State<PurchasesScreen>
             child: SingleChildScrollView(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 DropdownButtonFormField<int?>(
-                  value: poId,
+                  initialValue: poId,
                   decoration: const InputDecoration(labelText: 'Orden de Compra (opcional)'),
                   items: [
                     const DropdownMenuItem(value: null, child: Text('Sin OC')),
@@ -713,7 +712,7 @@ class _POCard extends StatelessWidget {
               ])),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
                 child: Text(_statusLabel(status), style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
               ),
             ]),
@@ -770,7 +769,7 @@ class _POCard extends StatelessWidget {
                   ),
                 const Spacer(),
                 Text('Toca para ver detalle',
-                    style: TextStyle(fontSize: 11, color: BsaTheme.textSecondary.withOpacity(0.6))),
+                    style: TextStyle(fontSize: 11, color: BsaTheme.textSecondary.withValues(alpha: 0.6))),
               ]),
             ],
           ]),
@@ -851,8 +850,8 @@ class _SuppliersTabState extends State<_SuppliersTab> {
                               CircleAvatar(
                                 radius: 22,
                                 backgroundColor: isActive
-                                    ? BsaTheme.primary.withOpacity(0.1)
-                                    : Colors.grey.withOpacity(0.1),
+                                    ? BsaTheme.primary.withValues(alpha: 0.1)
+                                    : Colors.grey.withValues(alpha: 0.1),
                                 child: Text(
                                   (s['name'] as String? ?? 'P')[0].toUpperCase(),
                                   style: TextStyle(
@@ -869,7 +868,7 @@ class _SuppliersTabState extends State<_SuppliersTab> {
                                           color: isActive ? BsaTheme.textPrimary : Colors.grey))),
                                   if (!isActive) Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(color: Colors.grey.withOpacity(0.15),
+                                    decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.15),
                                         borderRadius: BorderRadius.circular(10)),
                                     child: const Text('Inactivo', style: TextStyle(fontSize: 10, color: Colors.grey)),
                                   ),
@@ -1013,7 +1012,7 @@ class _InvoicesTabState extends State<_InvoicesTab> {
                               Container(
                                 width: 44, height: 44,
                                 decoration: BoxDecoration(
-                                  color: statusColor.withOpacity(0.1),
+                                  color: statusColor.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10)),
                                 child: Icon(Icons.receipt_long_rounded, color: statusColor, size: 22),
                               ),
@@ -1034,7 +1033,7 @@ class _InvoicesTabState extends State<_InvoicesTab> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
-                                    color: statusColor.withOpacity(0.1),
+                                    color: statusColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(10)),
                                   child: Text(isPending ? 'Pendiente' : 'Pagada',
                                       style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.w600)),
@@ -1135,7 +1134,7 @@ class _PODetailSheet extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: statusColor(status).withOpacity(0.1),
+                  color: statusColor(status).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20)),
                 child: Text(statusLabel(status),
                     style: TextStyle(color: statusColor(status), fontWeight: FontWeight.w600)),
@@ -1255,7 +1254,7 @@ class _SupplierDetailSheet extends StatelessWidget {
           width: 40, height: 4,
           decoration: BoxDecoration(color: BsaTheme.border, borderRadius: BorderRadius.circular(2)))),
         Row(children: [
-          CircleAvatar(radius: 28, backgroundColor: BsaTheme.primary.withOpacity(0.1),
+          CircleAvatar(radius: 28, backgroundColor: BsaTheme.primary.withValues(alpha: 0.1),
             child: Text((s['name'] as String? ?? 'P')[0].toUpperCase(),
                 style: const TextStyle(fontSize: 22, color: BsaTheme.primary, fontWeight: FontWeight.bold))),
           const SizedBox(width: 16),
@@ -1299,7 +1298,7 @@ class _InvoiceDetailSheet extends StatelessWidget {
         Row(children: [
           Container(width: 52, height: 52,
             decoration: BoxDecoration(
-              color: (isPending ? BsaTheme.warning : BsaTheme.secondary).withOpacity(0.1),
+              color: (isPending ? BsaTheme.warning : BsaTheme.secondary).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12)),
             child: Icon(Icons.receipt_long_rounded,
                 color: isPending ? BsaTheme.warning : BsaTheme.secondary, size: 28)),
@@ -1310,7 +1309,7 @@ class _InvoiceDetailSheet extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: (isPending ? BsaTheme.warning : BsaTheme.secondary).withOpacity(0.1),
+                color: (isPending ? BsaTheme.warning : BsaTheme.secondary).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10)),
               child: Text(isPending ? 'Pendiente de pago' : 'Pagada',
                   style: TextStyle(

@@ -91,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Logo BSA
-                    _BsaLogo(size: 56),
+                    const _BsaLogo(size: 56),
                     const Spacer(),
                     const Text(
                       'Sistema de Gestión\nde Mantenimiento',
@@ -107,27 +107,27 @@ class _LoginScreenState extends State<LoginScreen>
                     Text(
                       'Gestioná equipos, órdenes de trabajo, repuestos\ny notificaciones desde un solo lugar.',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.75),
+                        color: Colors.white.withValues(alpha: 0.75),
                         fontSize: 16,
                         height: 1.6,
                       ),
                     ),
                     const SizedBox(height: 48),
-                    _FeatureBadge(
+                    const _FeatureBadge(
                         icon: Icons.build_circle_outlined,
                         text: 'Órdenes de trabajo'),
                     const SizedBox(height: 12),
-                    _FeatureBadge(
+                    const _FeatureBadge(
                         icon: Icons.inventory_2_outlined,
                         text: 'Control de stock'),
                     const SizedBox(height: 12),
-                    _FeatureBadge(
+                    const _FeatureBadge(
                         icon: Icons.people_outline, text: 'Multi-rol y multi-empresa'),
                     const Spacer(),
                     Text(
                       '© ${DateTime.now().year} BSA Consultora',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.4),
+                        color: Colors.white.withValues(alpha: 0.4),
                         fontSize: 12,
                       ),
                     ),
@@ -170,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen>
                 padding: const EdgeInsets.fromLTRB(32, 40, 32, 32),
                 child: Column(
                   children: [
-                    _BsaLogo(size: 52),
+                    const _BsaLogo(size: 52),
                     const SizedBox(height: 20),
                     const Text(
                       'SGM',
@@ -185,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen>
                     Text(
                       AppConfig.companyName,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.75),
+                        color: Colors.white.withValues(alpha: 0.75),
                         fontSize: 14,
                       ),
                     ),
@@ -200,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen>
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF003A5C).withOpacity(0.15),
+                      color: const Color(0xFF003A5C).withValues(alpha: 0.15),
                       blurRadius: 30,
                       offset: const Offset(0, 10),
                     ),
@@ -212,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen>
               Text(
                 'SGM v${AppConfig.appVersion}',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.4),
+                  color: Colors.white.withValues(alpha: 0.4),
                   fontSize: 11,
                 ),
               ),
@@ -302,10 +302,10 @@ class _LoginScreenState extends State<LoginScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: BsaTheme.error.withOpacity(0.07),
+                    color: BsaTheme.error.withValues(alpha: 0.07),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                        color: BsaTheme.error.withOpacity(0.3)),
+                        color: BsaTheme.error.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
@@ -350,7 +350,7 @@ class _LoginScreenState extends State<LoginScreen>
                   child: Text('o',
                       style: TextStyle(
                           fontSize: 13,
-                          color: BsaTheme.textSecondary.withOpacity(0.6))),
+                          color: BsaTheme.textSecondary.withValues(alpha: 0.6))),
                 ),
                 const Expanded(child: Divider()),
               ]),
@@ -402,10 +402,10 @@ class _LoginScreenState extends State<LoginScreen>
 
               const SizedBox(height: 8),
               // Versión
-              Text(
+              const Text(
                 AppConfig.companyName,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 11, color: BsaTheme.textSecondary),
               ),
             ],
@@ -486,9 +486,9 @@ class _BsaLogo extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
+            color: Colors.white.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(size * 0.25),
-            border: Border.all(color: Colors.white.withOpacity(0.3)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
           ),
           child: Icon(
             Icons.precision_manufacturing_rounded,
@@ -528,7 +528,7 @@ class _FeatureBadge extends StatelessWidget {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: BsaTheme.secondary.withOpacity(0.2),
+            color: BsaTheme.secondary.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: BsaTheme.secondary, size: 17),
@@ -537,7 +537,7 @@ class _FeatureBadge extends StatelessWidget {
         Text(
           text,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.85),
+            color: Colors.white.withValues(alpha: 0.85),
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),

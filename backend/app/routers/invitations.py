@@ -105,13 +105,6 @@ async def create_invitation(
     Envía una invitación por email a un colaborador.
     Solo admin y RRHH pueden invitar.
     """
-    # Validar que el email no esté ya registrado en la empresa
-    existing = await db.execute(
-        select(User).where(User.email == payload.email)
-    )
-    if existing.scalars().first():
-        raise HTTPException(status_code=400, detail="El email ya está registrado")
-
     # Validar que no haya invitación pendiente previa
     existing_inv = await db.execute(
         select(Invitation).where(
@@ -262,23 +255,27 @@ async def accept_invitation(
         await db.commit()
         raise HTTPException(status_code=400, detail="La invitación ha expirado")
 
-    # Verificar que el email no se haya registrado mientras tanto
+    # Verificar si el usuario ya existe (multi-empresa)
     existing = await db.execute(select(User).where(User.email == inv.email))
-    if existing.scalars().first():
-        raise HTTPException(status_code=400, detail="El email ya está registrado")
+    existing_user = existing.scalars().first()
 
-    # Crear usuario
-    hashed = auth_service.get_password_hash(payload.password)
-    user = User(
-        email=inv.email,
-        full_name=payload.full_name or inv.full_name,
-        phone=payload.phone,
-        position=payload.position,
-        hashed_password=hashed,
-        company_id=inv.company_id,
-    )
-    db.add(user)
-    await db.flush()
+    if existing_user:
+        # Usuario ya existe en otra empresa → reutilizarlo, asignarle nuevos roles
+        user = existing_user
+    else:
+        # Crear usuario nuevo en la empresa de la invitación
+        hashed = auth_service.get_password_hash(payload.password)
+        user = User(
+            email=inv.email,
+            full_name=payload.full_name or inv.full_name,
+            phone=payload.phone,
+            position=payload.position,
+            hashed_password=hashed,
+            company_id=inv.company_id,
+            is_active=True,
+        )
+        db.add(user)
+        await db.flush()
 
     # Asignar roles de la invitación
     roles_to_assign = _parse_roles_csv(inv.roles_csv) or ["technician"]
@@ -296,10 +293,10 @@ async def accept_invitation(
 
     await db.commit()
 
-    # Generar token de sesión para auto-login
+    # Generar token de sesión para auto-login (usando company_id de la invitación)
     token_data = {
         "sub": str(user.id),
-        "company_id": str(user.company_id),
+        "company_id": str(inv.company_id),
         "roles": roles_to_assign,
     }
     access_token = auth_service.create_access_token(token_data)
@@ -309,5 +306,6 @@ async def accept_invitation(
         "token_type": "bearer",
         "user_id": user.id,
         "email": user.email,
+        "company_id": inv.company_id,
         "roles": roles_to_assign,
     }

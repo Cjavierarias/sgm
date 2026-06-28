@@ -88,8 +88,8 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
   Future<void> _showRequestPartForm() async {
     if (_spareParts.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No hay repuestos disponibles para solicitar')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('No hay repuestos disponibles para solicitar')));
       }
       return;
     }
@@ -107,7 +107,7 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<int>(
-                  value: selectedPartId,
+                  initialValue: selectedPartId,
                   decoration: const InputDecoration(labelText: 'Repuesto *'),
                   items: _spareParts
                       .map((p) => DropdownMenuItem(
@@ -128,7 +128,8 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: notesCtrl,
-                  decoration: const InputDecoration(labelText: 'Notas (opcional)'),
+                  decoration:
+                      const InputDecoration(labelText: 'Notas (opcional)'),
                 ),
               ],
             ),
@@ -142,12 +143,13 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
                 if (selectedPartId == null) return;
                 final qty = double.tryParse(qtyCtrl.text) ?? 0;
                 if (qty <= 0) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(content: Text('Ingresá una cantidad válida')));
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                      content: Text('Ingresá una cantidad válida')));
                   return;
                 }
                 try {
-                  final auth = Provider.of<AuthProvider>(context, listen: false);
+                  final auth =
+                      Provider.of<AuthProvider>(context, listen: false);
                   await auth.apiService.createSparePartRequest({
                     'spare_part_id': selectedPartId,
                     'quantity': qty,
@@ -165,8 +167,8 @@ class _WorkOrderDetailScreenState extends State<WorkOrderDetailScreen> {
                   }
                 } catch (e) {
                   if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(content: Text('Error: $e')));
+                    ScaffoldMessenger.of(ctx)
+                        .showSnackBar(SnackBar(content: Text('Error: $e')));
                   }
                 }
               },
@@ -284,19 +286,28 @@ class _StatusActions extends StatelessWidget {
     if (!canManage) return const SizedBox.shrink();
 
     final transitions = <String, String>{};
-    if (status == 'open' || status == 'assigned')
-      transitions['in_progress'] = 'Iniciar Trabajo';
-    if (status == 'in_progress') transitions['waiting_parts'] = 'Esperar Repuestos';
-    if (status == 'waiting_parts') transitions['in_progress'] = 'Reanudar Trabajo';
-    if (status == 'in_progress' || status == 'waiting_parts')
-      transitions['closed'] = 'Cerrar OT';
-    if (status != 'closed' && status != 'cancelled')
+    i {
+      us == 'open' || status == 'assigned')
+      tra
+    }nsitions['in_progress'] = 'Iniciar Trabajo';
+    if (status == 'in_progress') {
+      transitions['waiting_parts'] = 'Esperar Repuestos';
+    }
+    if (status == 'waiting_parts') {
+      transitions['in_progress'] = 'Reanudar Trabajo';
+    }
+    i {
+      us == 'in_progress' || status == 'wa
+    }iting_parts')
+      transitions['closed'] = 'Cerrar O {
+       if (status != 'closed' && status != '
+    }cancelled')
       transitions['cancelled'] = 'Cancelar';
 
     if (transitions.isEmpty) return const SizedBox.shrink();
 
     return Card(
-      child: Padding(
+      child = Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,7 +321,8 @@ class _StatusActions extends StatelessWidget {
               children: transitions.entries
                   .map((e) => OutlinedButton(
                         onPressed: () => onChangeStatus(e.key),
-                        child: Text(e.value, style: const TextStyle(fontSize: 13)),
+                        child:
+                            Text(e.value, style: const TextStyle(fontSize: 13)),
                       ))
                   .toList(),
             ),
@@ -333,13 +345,16 @@ class _RequestPartsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canRequest =
-        auth.hasAnyRole(['admin', 'maintenance_manager', 'technician', 'warehouse']);
+    final canRequest = auth.hasAnyRole(
+        ['admin', 'maintenance_manager', 'technician', 'warehouse']);
     if (!canRequest) return const SizedBox.shrink();
 
     final status = wo['status'] as String? ?? '';
     // Solo mostrar si la OT está en progreso o esperando repuestos
-    if (status != 'in_progress' && status != 'waiting_parts' && status != 'open' && status != 'assigned') {
+    if (status != 'in_progress' &&
+        status != 'waiting_parts' &&
+        status != 'open' &&
+        status != 'assigned') {
       return const SizedBox.shrink();
     }
 
@@ -389,12 +404,18 @@ class _StatusBadge extends StatelessWidget {
 
   Color get color {
     switch (status) {
-      case 'open': return const Color(0xFF2E86AB);
-      case 'assigned': return const Color(0xFF8E44AD);
-      case 'in_progress': return const Color(0xFFE67E22);
-      case 'waiting_parts': return const Color(0xFFF39C12);
-      case 'closed': return const Color(0xFF27AE60);
-      default: return Colors.grey;
+      case 'open':
+        return const Color(0xFF2E86AB);
+      case 'assigned':
+        return const Color(0xFF8E44AD);
+      case 'in_progress':
+        return const Color(0xFFE67E22);
+      case 'waiting_parts':
+        return const Color(0xFFF39C12);
+      case 'closed':
+        return const Color(0xFF27AE60);
+      default:
+        return Colors.grey;
     }
   }
 
@@ -403,7 +424,7 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -434,11 +455,16 @@ class _PriorityBadge extends StatelessWidget {
 
   Color get color {
     switch (priority) {
-      case 'low': return Colors.grey;
-      case 'medium': return const Color(0xFF2E86AB);
-      case 'high': return Colors.orange;
-      case 'critical': return Colors.red;
-      default: return Colors.grey;
+      case 'low':
+        return Colors.grey;
+      case 'medium':
+        return const Color(0xFF2E86AB);
+      case 'high':
+        return Colors.orange;
+      case 'critical':
+        return Colors.red;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -447,7 +473,7 @@ class _PriorityBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -478,18 +504,16 @@ class _WODetails extends StatelessWidget {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 12),
             _DetailRow('Equipo', wo['equipment_name'] ?? 'Sin equipo'),
-            _DetailRow(
-                'Asignado a', wo['assigned_to_name'] ?? 'Sin asignar'),
+            _DetailRow('Asignado a', wo['assigned_to_name'] ?? 'Sin asignar'),
             _DetailRow('Tipo',
                 wo['wo_type'] == 'corrective' ? 'Correctivo' : 'Preventivo'),
             if (wo['estimated_hours'] != null)
-              _DetailRow(
-                  'Horas estimadas', '${wo['estimated_hours']}h'),
+              _DetailRow('Horas estimadas', '${wo['estimated_hours']}h'),
             if (wo['actual_hours'] != null)
               _DetailRow('Horas reales', '${wo['actual_hours']}h'),
             if (wo['due_date'] != null)
-              _DetailRow('Fecha límite',
-                  (wo['due_date'] as String).substring(0, 10)),
+              _DetailRow(
+                  'Fecha límite', (wo['due_date'] as String).substring(0, 10)),
           ],
         ),
       ),
@@ -515,8 +539,8 @@ class _DetailRow extends StatelessWidget {
           ),
           Expanded(
             child: Text(value,
-                style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w500)),
+                style:
+                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
           ),
         ],
       ),
@@ -545,8 +569,8 @@ class _CommentsSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Comentarios (${comments.length})',
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 14)),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 12),
             ...comments.map((c) => _CommentBubble(comment: c)),
             const Divider(),

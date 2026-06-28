@@ -85,7 +85,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, color: BsaTheme.error, size: 48),
+                    const Icon(Icons.error_outline,
+                        color: BsaTheme.error, size: 48),
                     const SizedBox(height: 16),
                     Text(sub.error, textAlign: TextAlign.center),
                     const SizedBox(height: 16),
@@ -115,7 +116,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       (info.status == 'trial' ||
                           info.status == 'grace' ||
                           info.status == 'suspended')) ...[
-                    _SectionTitle(icon: Icons.payment, title: 'Planes de pago'),
+                    const _SectionTitle(icon: Icons.payment, title: 'Planes de pago'),
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -160,7 +161,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     const SizedBox(height: 24),
                   ],
                   if (info.status == 'suspended') ...[
-                    _AlertBanner(
+                    const _AlertBanner(
                       icon: Icons.block_rounded,
                       color: BsaTheme.error,
                       title: 'Cuenta suspendida',
@@ -173,7 +174,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   ],
 
                   // ── Historial ───────────────────────────────────────────
-                  _SectionTitle(icon: Icons.history, title: 'Historial de pagos'),
+                  const _SectionTitle(
+                      icon: Icons.history, title: 'Historial de pagos'),
                   const SizedBox(height: 12),
                   if (_loadingHistory)
                     const Center(child: CircularProgressIndicator())
@@ -227,8 +229,11 @@ class _StatusCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            _InfoRow(label: 'Estado',   value: info.statusLabel,    color: info.statusColor),
-            _InfoRow(label: 'Plan',     value: info.planLabel),
+            _InfoRow(
+                label: 'Estado',
+                value: info.statusLabel,
+                color: info.statusColor),
+            _InfoRow(label: 'Plan', value: info.planLabel),
             _InfoRow(
               label: 'Vence',
               value: info.expiryDateLabel,
@@ -267,7 +272,8 @@ class _InfoRow extends StatelessWidget {
             width: 130,
             child: Text(
               label,
-              style: const TextStyle(color: BsaTheme.textSecondary, fontSize: 13),
+              style:
+                  const TextStyle(color: BsaTheme.textSecondary, fontSize: 13),
             ),
           ),
           Text(
@@ -318,7 +324,7 @@ class _PlanCard extends StatelessWidget {
           boxShadow: highlighted
               ? [
                   BoxShadow(
-                    color: BsaTheme.primary.withOpacity(0.25),
+                    color: BsaTheme.primary.withValues(alpha: 0.25),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   )
@@ -337,7 +343,10 @@ class _PlanCard extends StatelessWidget {
                 ),
                 child: Text(
                   savings!,
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             if (savings != null) const SizedBox(height: 8),
@@ -371,9 +380,12 @@ class _PlanCard extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: onTap,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: highlighted ? Colors.white : BsaTheme.primary,
-                  foregroundColor: highlighted ? BsaTheme.primary : Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  backgroundColor:
+                      highlighted ? Colors.white : BsaTheme.primary,
+                  foregroundColor:
+                      highlighted ? BsaTheme.primary : Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
                 child: const Text('Pagar con Mercado Pago'),
               ),
@@ -450,9 +462,9 @@ class _AlertBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,10 +477,13 @@ class _AlertBanner extends StatelessWidget {
               children: [
                 Text(title,
                     style: TextStyle(
-                        fontWeight: FontWeight.bold, color: color, fontSize: 14)),
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                        fontSize: 14)),
                 const SizedBox(height: 4),
                 Text(message,
-                    style: const TextStyle(fontSize: 13, color: BsaTheme.textPrimary)),
+                    style: const TextStyle(
+                        fontSize: 13, color: BsaTheme.textPrimary)),
               ],
             ),
           ),
@@ -509,16 +524,26 @@ class _HistoryTile extends StatelessWidget {
   IconData get _icon {
     final t = event['event_type'] as String? ?? '';
     if (t.contains('approved')) return Icons.check_circle_rounded;
-    if (t.contains('rejected') || t.contains('cancelled')) return Icons.cancel_rounded;
+    if (t.contains('rejected') || t.contains('cancelled')) {
+      return Icons.cancel_rounded;
+    }
     if (t.contains('trial')) return Icons.hourglass_empty_rounded;
-    if (t.contains('purged') || t.contains('suspended')) return Icons.delete_rounded;
+    if (t.contains('purged') || t.contains('suspended')) {
+      return Icons.delete_rounded;
+    }
     return Icons.receipt_long_rounded;
   }
 
   Color get _color {
     final t = event['event_type'] as String? ?? '';
-    if (t.contains('approved') || t.contains('trial_started')) return BsaTheme.success;
-    if (t.contains('rejected') || t.contains('cancelled') || t.contains('purged')) return BsaTheme.error;
+    if (t.contains('approved') || t.contains('trial_started')) {
+      return BsaTheme.success;
+    }
+    if (t.contains('rejected') ||
+        t.contains('cancelled') ||
+        t.contains('purged')) {
+      return BsaTheme.error;
+    }
     if (t.contains('expired')) return BsaTheme.warning;
     return BsaTheme.textSecondary;
   }
@@ -526,14 +551,14 @@ class _HistoryTile extends StatelessWidget {
   String get _label {
     final t = event['event_type'] as String? ?? '';
     const labels = {
-      'trial_started':          'Prueba gratuita iniciada',
-      'trial_expired':          'Prueba vencida',
-      'payment_approved':       'Pago aprobado',
-      'payment_rejected':       'Pago rechazado',
-      'payment_pending':        'Pago pendiente',
-      'payment_cancelled':      'Pago cancelado',
+      'trial_started': 'Prueba gratuita iniciada',
+      'trial_expired': 'Prueba vencida',
+      'payment_approved': 'Pago aprobado',
+      'payment_rejected': 'Pago rechazado',
+      'payment_pending': 'Pago pendiente',
+      'payment_cancelled': 'Pago cancelado',
       'subscription_cancelled': 'Suscripción cancelada',
-      'data_purged':            'Datos purgados',
+      'data_purged': 'Datos purgados',
     };
     return labels[t] ?? t;
   }
@@ -541,8 +566,8 @@ class _HistoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final amount = event['amount_usd'];
-    final date   = event['created_at'] as String? ?? '';
-    final notes  = event['notes'] as String? ?? '';
+    final date = event['created_at'] as String? ?? '';
+    final notes = event['notes'] as String? ?? '';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -551,7 +576,7 @@ class _HistoryTile extends StatelessWidget {
       color: Colors.white,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: _color.withOpacity(0.1),
+          backgroundColor: _color.withValues(alpha: 0.1),
           child: Icon(_icon, color: _color, size: 20),
         ),
         title: Text(_label,

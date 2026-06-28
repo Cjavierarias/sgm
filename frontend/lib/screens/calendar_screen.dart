@@ -1,4 +1,3 @@
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../main.dart' show BsaTheme;
@@ -129,7 +128,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       final dayEvents = _eventsForDay(day);
       days.add(Container(
         decoration: BoxDecoration(
-          color: dayEvents.isNotEmpty ? BsaTheme.primary.withOpacity(0.1) : null,
+          color: dayEvents.isNotEmpty ? BsaTheme.primary.withValues(alpha: 0.1) : null,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -170,18 +169,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   Widget _buildEventsList() {
     if (_events.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.event_busy, size: 48, color: BsaTheme.textSecondary),
-            const SizedBox(height: 12),
-            const Text(
+            Icon(Icons.event_busy, size: 48, color: BsaTheme.textSecondary),
+            SizedBox(height: 12),
+            Text(
               'No hay eventos este mes',
               style: TextStyle(color: BsaTheme.textSecondary),
             ),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: 8),
+            Text(
               'Sincronizá tus planes de mantenimiento con Google Calendar',
               style: TextStyle(color: BsaTheme.textSecondary, fontSize: 12),
               textAlign: TextAlign.center,
@@ -201,7 +200,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: (BsaTheme.primary).withOpacity(0.15),
+              backgroundColor: (BsaTheme.primary).withValues(alpha: 0.15),
               child: Icon(
                 synced ? Icons.event_available : Icons.event,
                 color: BsaTheme.primary,

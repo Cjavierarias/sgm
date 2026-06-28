@@ -280,7 +280,7 @@ class _EquipmentCard extends StatelessWidget {
             Container(
               width: 48, height: 48,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(Icons.precision_manufacturing_rounded, color: color, size: 24),
@@ -301,7 +301,7 @@ class _EquipmentCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(_EquipmentsScreenState.statusLabel(status),
@@ -434,7 +434,7 @@ class _EquipmentDetailSheetState extends State<_EquipmentDetailSheet>
                 Container(
                   width: 48, height: 48,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                    color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                   child: Icon(Icons.precision_manufacturing_rounded, color: color, size: 26),
                 ),
                 const SizedBox(width: 14),
@@ -447,7 +447,7 @@ class _EquipmentDetailSheetState extends State<_EquipmentDetailSheet>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                    color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
                   child: Text(_EquipmentsScreenState.statusLabel(status),
                       style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
                 ),

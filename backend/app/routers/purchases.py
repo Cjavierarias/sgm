@@ -563,11 +563,7 @@ async def list_invoices(
 ):
     result = await db.execute(
         select(Invoice)
-        .join(PurchaseOrder, Invoice.purchase_order_id == PurchaseOrder.id, isouter=True)
-        .where(
-            (PurchaseOrder.company_id == current_user.company_id) |
-            (Invoice.purchase_order_id == None)
-        )
+        .where(Invoice.company_id == current_user.company_id)
         .options(selectinload(Invoice.purchase_order))
         .order_by(Invoice.created_at.desc())
         .offset(skip).limit(limit)
@@ -596,7 +592,22 @@ async def create_invoice(
     current_user: User = Depends(require_roles("admin", "purchasing")),
     db: AsyncSession = Depends(get_db),
 ):
+    # Validar que la OC (si se especifica) pertenece a la empresa del usuario
+    if payload.purchase_order_id:
+        po_result = await db.execute(
+            select(PurchaseOrder).where(
+                PurchaseOrder.id == payload.purchase_order_id,
+                PurchaseOrder.company_id == current_user.company_id,
+            )
+        )
+        if not po_result.scalars().first():
+            raise HTTPException(
+                status_code=400,
+                detail="La orden de compra especificada no existe o no pertenece a tu empresa"
+            )
+
     inv = Invoice(
+        company_id=current_user.company_id,
         purchase_order_id=payload.purchase_order_id,
         invoice_number=payload.invoice_number,
         amount=payload.amount,
@@ -630,7 +641,7 @@ async def pay_invoice(
     result = await db.execute(
         select(Invoice)
         .options(selectinload(Invoice.purchase_order))
-        .where(Invoice.id == inv_id)
+        .where(Invoice.id == inv_id, Invoice.company_id == current_user.company_id)
     )
     inv = result.scalars().first()
     if not inv:

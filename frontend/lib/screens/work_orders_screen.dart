@@ -1,7 +1,7 @@
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../main.dart' show BsaTheme;
 import '../providers/auth_provider.dart';
 import 'work_order_form_screen.dart';
@@ -25,13 +25,26 @@ class _WorkOrdersScreenState extends State<WorkOrdersScreen> {
   }
 
   Future<void> _load() async {
-    setState(() { _loading = true; _error = ''; });
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
     try {
-      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final auth = context.read<AuthProvider>();
       final data = await auth.apiService.getWorkOrders();
-      if (mounted) setState(() { _orders = data; _loading = false; });
+      if (mounted) {
+        setState(() {
+          _orders = data;
+          _loading = false;
+        });
+      }
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -47,7 +60,8 @@ class _WorkOrdersScreenState extends State<WorkOrdersScreen> {
           SnackBar(
             content: Text('Exportado: ${data['rows_exported']} filas'),
             backgroundColor: BsaTheme.secondary,
-            action: SnackBarAction(label: 'Abrir', onPressed: () => _openUrl(url)),
+            action:
+                SnackBarAction(label: 'Abrir', onPressed: () => _openUrl(url)),
           ),
         );
       }
@@ -58,9 +72,12 @@ class _WorkOrdersScreenState extends State<WorkOrdersScreen> {
     }
   }
 
-  void _openUrl(String url) {
+  void _openUrl(String url) async {
     if (url.isNotEmpty) {
-      html.window.open(url, '_blank');
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
     }
   }
 
@@ -123,7 +140,8 @@ class _WorkOrdersScreenState extends State<WorkOrdersScreen> {
                             Text(_error),
                             const SizedBox(height: 12),
                             ElevatedButton(
-                                onPressed: _load, child: const Text('Reintentar')),
+                                onPressed: _load,
+                                child: const Text('Reintentar')),
                           ],
                         ),
                       )
@@ -186,9 +204,8 @@ class _FilterBar extends StatelessWidget {
                     backgroundColor: BsaTheme.background,
                     showCheckmark: false,
                     side: BorderSide(
-                      color: selected == f.$1
-                          ? BsaTheme.primary
-                          : BsaTheme.border,
+                      color:
+                          selected == f.$1 ? BsaTheme.primary : BsaTheme.border,
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                   ),
@@ -205,13 +222,20 @@ class _WOCard extends StatelessWidget {
 
   Color _statusColor(String s) {
     switch (s) {
-      case 'open': return BsaTheme.primary;
-      case 'assigned': return const Color(0xFF7C3AED);
-      case 'in_progress': return const Color(0xFFF59E0B);
-      case 'waiting_parts': return const Color(0xFFD97706);
-      case 'closed': return BsaTheme.secondary;
-      case 'cancelled': return BsaTheme.textSecondary;
-      default: return BsaTheme.textSecondary;
+      case 'open':
+        return BsaTheme.primary;
+      case 'assigned':
+        return const Color(0xFF7C3AED);
+      case 'in_progress':
+        return const Color(0xFFF59E0B);
+      case 'waiting_parts':
+        return const Color(0xFFD97706);
+      case 'closed':
+        return BsaTheme.secondary;
+      case 'cancelled':
+        return BsaTheme.textSecondary;
+      default:
+        return BsaTheme.textSecondary;
     }
   }
 
@@ -229,10 +253,14 @@ class _WOCard extends StatelessWidget {
 
   Color _priorityColor(String p) {
     switch (p) {
-      case 'critical': return const Color(0xFFEF4444);
-      case 'high': return const Color(0xFFF59E0B);
-      case 'medium': return BsaTheme.primary;
-      default: return BsaTheme.textSecondary;
+      case 'critical':
+        return const Color(0xFFEF4444);
+      case 'high':
+        return const Color(0xFFF59E0B);
+      case 'medium':
+        return BsaTheme.primary;
+      default:
+        return BsaTheme.textSecondary;
     }
   }
 
@@ -274,8 +302,7 @@ class _WOCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   _Badge(
-                      label: _statusLabel(status),
-                      color: _statusColor(status)),
+                      label: _statusLabel(status), color: _statusColor(status)),
                 ],
               ),
               if (wo['description'] != null &&
@@ -335,7 +362,7 @@ class _Badge extends StatelessWidget {
       padding: EdgeInsets.symmetric(
           horizontal: small ? 8 : 10, vertical: small ? 3 : 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(

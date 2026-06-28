@@ -14,9 +14,8 @@ Endpoints:
 from __future__ import annotations
 
 import base64
-import os
-import uuid
 from datetime import datetime
+from io import BytesIO
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -31,11 +30,9 @@ from app.models.base import (
     WorkOrderPhoto, WOPriority, WOStatus, WOType,
 )
 from app.routers.auth import get_current_user, require_roles
+from app.services import google_drive
 
 router = APIRouter(prefix="/work-orders", tags=["work-orders"])
-
-UPLOAD_DIR = "/tmp/sgm_uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 # ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -204,7 +201,7 @@ async def list_work_orders(
 @router.post("/", response_model=WOOut, status_code=201)
 async def create_work_order(
     payload: WOCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin", "maintenance_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     try:
@@ -267,6 +264,15 @@ async def update_work_order(
     wo = result.scalars().first()
     if not wo:
         raise HTTPException(status_code=404, detail="OT no encontrada")
+
+    # Validar que un técnico solo pueda editar OT que tiene asignadas
+    user_roles = [ur.role.value if hasattr(ur.role, 'value') else str(ur.role) for ur in current_user.user_roles]
+    is_technician_only = not any(r in ("admin", "maintenance_manager") for r in user_roles)
+    if is_technician_only and wo.assigned_to_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo podés editar las OT que tenés asignadas"
+        )
 
     old_assigned = wo.assigned_to_id
 
@@ -425,14 +431,10 @@ async def upload_photo(
     except Exception:
         raise HTTPException(status_code=400, detail="Imagen base64 inválida")
 
-    ext = os.path.splitext(payload.filename)[1] or ".jpg"
-    fname = f"{uuid.uuid4().hex}{ext}"
-    fpath = os.path.join(UPLOAD_DIR, fname)
-    with open(fpath, "wb") as f:
-        f.write(img_data)
-
-    # URL relativa — en producción apuntaría a S3/Drive
-    url = f"/uploads/{fname}"
+    # Subir a Google Drive (con fallback local) usando el servicio google_drive
+    from io import BytesIO
+    file_obj = BytesIO(img_data)
+    url = google_drive.upload_to_drive(file_obj, payload.filename, current_user.company_id)
 
     photo = WorkOrderPhoto(
         work_order_id=wo_id,

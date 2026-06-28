@@ -84,7 +84,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               decoration: BoxDecoration(
                                 color: isRead
                                     ? BsaTheme.border
-                                    : BsaTheme.primary.withOpacity(0.1),
+                                    : BsaTheme.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Icon(

@@ -136,11 +136,11 @@ class _InvitationsScreenState extends State<InvitationsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    const Row(
                       children: [
-                        const Icon(Icons.person_add_rounded, color: BsaTheme.primary),
-                        const SizedBox(width: 8),
-                        const Text(
+                        Icon(Icons.person_add_rounded, color: BsaTheme.primary),
+                        SizedBox(width: 8),
+                        Text(
                           'Invitar colaborador',
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: BsaTheme.textPrimary),
                         ),
@@ -165,7 +165,7 @@ class _InvitationsScreenState extends State<InvitationsScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _selectedRole,
+                      initialValue: _selectedRole,
                       decoration: const InputDecoration(
                         labelText: 'Rol',
                         prefixIcon: Icon(Icons.badge_outlined),
@@ -213,7 +213,7 @@ class _InvitationsScreenState extends State<InvitationsScreen> {
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: _statusColor(inv['status'] as String).withOpacity(0.15),
+                    backgroundColor: _statusColor(inv['status'] as String).withValues(alpha: 0.15),
                     child: Icon(
                       inv['status'] == 'accepted' ? Icons.check_circle : Icons.mail,
                       color: _statusColor(inv['status'] as String),

@@ -35,7 +35,13 @@ class _WorkOrderFormScreenState extends State<WorkOrderFormScreen> {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final eq = await auth.apiService.getEquipments();
       final us = await auth.apiService.getUsers();
-      if (mounted) setState(() { _equipments = eq; _users = us; _loading = false; });
+      if (mounted) {
+        setState(() {
+          _equipments = eq;
+          _users = us;
+          _loading = false;
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -59,7 +65,10 @@ class _WorkOrderFormScreenState extends State<WorkOrderFormScreen> {
       });
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -84,61 +93,83 @@ class _WorkOrderFormScreenState extends State<WorkOrderFormScreen> {
                           children: [
                             TextFormField(
                               controller: _titleCtrl,
-                              decoration: const InputDecoration(labelText: 'Título *'),
+                              decoration:
+                                  const InputDecoration(labelText: 'Título *'),
                               validator: (v) => v!.isEmpty ? 'Requerido' : null,
                             ),
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _descCtrl,
-                              decoration: const InputDecoration(labelText: 'Descripción'),
+                              decoration: const InputDecoration(
+                                  labelText: 'Descripción'),
                               maxLines: 3,
                             ),
                             const SizedBox(height: 12),
                             DropdownButtonFormField<String>(
-                              value: _priority,
-                              decoration: const InputDecoration(labelText: 'Prioridad'),
+                              initialValue: _priority,
+                              decoration:
+                                  const InputDecoration(labelText: 'Prioridad'),
                               items: const [
-                                DropdownMenuItem(value: 'low', child: Text('Baja')),
-                                DropdownMenuItem(value: 'medium', child: Text('Media')),
-                                DropdownMenuItem(value: 'high', child: Text('Alta')),
-                                DropdownMenuItem(value: 'critical', child: Text('Crítica')),
+                                DropdownMenuItem(
+                                    value: 'low', child: Text('Baja')),
+                                DropdownMenuItem(
+                                    value: 'medium', child: Text('Media')),
+                                DropdownMenuItem(
+                                    value: 'high', child: Text('Alta')),
+                                DropdownMenuItem(
+                                    value: 'critical', child: Text('Crítica')),
                               ],
                               onChanged: (v) => setState(() => _priority = v!),
                             ),
                             const SizedBox(height: 12),
                             DropdownButtonFormField<String>(
-                              value: _type,
-                              decoration: const InputDecoration(labelText: 'Tipo'),
+                              initialValue: _type,
+                              decoration:
+                                  const InputDecoration(labelText: 'Tipo'),
                               items: const [
-                                DropdownMenuItem(value: 'corrective', child: Text('Correctivo')),
-                                DropdownMenuItem(value: 'preventive', child: Text('Preventivo')),
-                                DropdownMenuItem(value: 'predictive', child: Text('Predictivo')),
+                                DropdownMenuItem(
+                                    value: 'corrective',
+                                    child: Text('Correctivo')),
+                                DropdownMenuItem(
+                                    value: 'preventive',
+                                    child: Text('Preventivo')),
+                                DropdownMenuItem(
+                                    value: 'predictive',
+                                    child: Text('Predictivo')),
                               ],
                               onChanged: (v) => setState(() => _type = v!),
                             ),
                             const SizedBox(height: 12),
                             DropdownButtonFormField<int?>(
-                              value: _equipmentId,
-                              decoration: const InputDecoration(labelText: 'Equipo (opcional)'),
+                              initialValue: _equipmentId,
+                              decoration: const InputDecoration(
+                                  labelText: 'Equipo (opcional)'),
                               items: [
-                                const DropdownMenuItem(value: null, child: Text('Sin equipo')),
+                                const DropdownMenuItem(
+                                    value: null, child: Text('Sin equipo')),
                                 ..._equipments.map((e) => DropdownMenuItem(
                                     value: e['id'] as int,
                                     child: Text(e['name'] as String? ?? ''))),
                               ],
-                              onChanged: (v) => setState(() => _equipmentId = v),
+                              onChanged: (v) =>
+                                  setState(() => _equipmentId = v),
                             ),
                             const SizedBox(height: 12),
                             DropdownButtonFormField<int?>(
-                              value: _assignedToId,
-                              decoration: const InputDecoration(labelText: 'Asignar a (opcional)'),
+                              initialValue: _assignedToId,
+                              decoration: const InputDecoration(
+                                  labelText: 'Asignar a (opcional)'),
                               items: [
-                                const DropdownMenuItem(value: null, child: Text('Sin asignar')),
+                                const DropdownMenuItem(
+                                    value: null, child: Text('Sin asignar')),
                                 ..._users.map((u) => DropdownMenuItem(
                                     value: u['id'] as int,
-                                    child: Text(u['full_name'] as String? ?? u['email'] as String? ?? ''))),
+                                    child: Text(u['full_name'] as String? ??
+                                        u['email'] as String? ??
+                                        ''))),
                               ],
-                              onChanged: (v) => setState(() => _assignedToId = v),
+                              onChanged: (v) =>
+                                  setState(() => _assignedToId = v),
                             ),
                             const SizedBox(height: 12),
                             // Fecha límite
@@ -146,11 +177,16 @@ class _WorkOrderFormScreenState extends State<WorkOrderFormScreen> {
                               onTap: () async {
                                 final picked = await showDatePicker(
                                   context: context,
-                                  initialDate: _dueDate ?? DateTime.now().add(const Duration(days: 7)),
+                                  initialDate: _dueDate ??
+                                      DateTime.now()
+                                          .add(const Duration(days: 7)),
                                   firstDate: DateTime.now(),
-                                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                                  lastDate: DateTime.now()
+                                      .add(const Duration(days: 365)),
                                 );
-                                if (picked != null) setState(() => _dueDate = picked);
+                                if (picked != null) {
+                                  setState(() => _dueDate = picked);
+                                }
                               },
                               child: InputDecorator(
                                 decoration: const InputDecoration(

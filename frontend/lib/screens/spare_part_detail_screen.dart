@@ -134,8 +134,8 @@ class _StockCard extends StatelessWidget {
               height: 64,
               decoration: BoxDecoration(
                 color: isLow
-                    ? Colors.orange.withOpacity(0.1)
-                    : Colors.green.withOpacity(0.1),
+                    ? Colors.orange.withValues(alpha: 0.1)
+                    : Colors.green.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -259,8 +259,8 @@ class _MovementsCard extends StatelessWidget {
                         height: 32,
                         decoration: BoxDecoration(
                           color: isEntry
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.red.withOpacity(0.1),
+                              ? Colors.green.withValues(alpha: 0.1)
+                              : Colors.red.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -507,7 +507,7 @@ class _SparePartFormScreenState extends State<SparePartFormScreen> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<int?>(
-                        value: _equipmentId,
+                        initialValue: _equipmentId,
                         decoration: const InputDecoration(
                             labelText: 'Equipo asociado (opcional)'),
                         items: [

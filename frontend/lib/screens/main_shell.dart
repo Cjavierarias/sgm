@@ -185,10 +185,10 @@ class _SideBar extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.12),
+                    color: Colors.white.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: Colors.white.withOpacity(0.2)),
+                        color: Colors.white.withValues(alpha: 0.2)),
                   ),
                   child: const Icon(
                     Icons.precision_manufacturing_rounded,
@@ -212,7 +212,7 @@ class _SideBar extends StatelessWidget {
                     Text(
                       AppConfig.companyName,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.55),
+                        color: Colors.white.withValues(alpha: 0.55),
                         fontSize: 10,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.3,
@@ -230,9 +230,9 @@ class _SideBar extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.07),
+                color: Colors.white.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: Row(
                 children: [
@@ -268,7 +268,7 @@ class _SideBar extends StatelessWidget {
                         Text(
                           _roleLabel(auth.roles),
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.55),
+                            color: Colors.white.withValues(alpha: 0.55),
                             fontSize: 11,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -286,7 +286,7 @@ class _SideBar extends StatelessWidget {
             child: Text(
               'MENÚ PRINCIPAL',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.35),
+                color: Colors.white.withValues(alpha: 0.35),
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2,
@@ -318,12 +318,12 @@ class _SideBar extends StatelessWidget {
                             horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
                           color: isActive
-                              ? BsaTheme.secondary.withOpacity(0.2)
+                              ? BsaTheme.secondary.withValues(alpha: 0.2)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                           border: isActive
                               ? Border.all(
-                                  color: BsaTheme.secondary.withOpacity(0.4))
+                                  color: BsaTheme.secondary.withValues(alpha: 0.4))
                               : null,
                         ),
                         child: Row(
@@ -345,7 +345,7 @@ class _SideBar extends StatelessWidget {
                               item.icon,
                               color: isActive
                                   ? Colors.white
-                                  : Colors.white.withOpacity(0.5),
+                                  : Colors.white.withValues(alpha: 0.5),
                               size: 20,
                             ),
                             const SizedBox(width: 12),
@@ -355,7 +355,7 @@ class _SideBar extends StatelessWidget {
                                 style: TextStyle(
                                   color: isActive
                                       ? Colors.white
-                                      : Colors.white.withOpacity(0.65),
+                                      : Colors.white.withValues(alpha: 0.65),
                                   fontSize: 13.5,
                                   fontWeight: isActive
                                       ? FontWeight.w600
@@ -385,7 +385,7 @@ class _SideBar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Divider(
-                color: Colors.white.withOpacity(0.12), height: 1),
+                color: Colors.white.withValues(alpha: 0.12), height: 1),
           ),
           const SizedBox(height: 4),
           Material(
@@ -402,12 +402,12 @@ class _SideBar extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(Icons.logout_rounded,
-                        color: Colors.white.withOpacity(0.45), size: 18),
+                        color: Colors.white.withValues(alpha: 0.45), size: 18),
                     const SizedBox(width: 12),
                     Text(
                       'Cerrar sesión',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.55),
+                        color: Colors.white.withValues(alpha: 0.55),
                         fontSize: 13,
                       ),
                     ),
@@ -422,7 +422,7 @@ class _SideBar extends StatelessWidget {
               'v${AppConfig.appVersion}',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 fontSize: 10,
               ),
             ),

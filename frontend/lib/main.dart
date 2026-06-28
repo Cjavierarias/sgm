@@ -190,20 +190,20 @@ abstract class BsaTheme {
       ),
       scaffoldBackgroundColor: background,
       // ── AppBar ──────────────────────────────────────────────────────────
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 1,
         backgroundColor: surface,
         foregroundColor: textPrimary,
         surfaceTintColor: Colors.transparent,
         shadowColor: border,
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
           color: textPrimary,
           fontSize: 17,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.3,
         ),
-        iconTheme: const IconThemeData(color: textPrimary, size: 22),
+        iconTheme: IconThemeData(color: textPrimary, size: 22),
         systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
       // ── Cards ────────────────────────────────────────────────────────────
@@ -285,7 +285,7 @@ abstract class BsaTheme {
         ),
         labelStyle: const TextStyle(color: textSecondary, fontSize: 14),
         hintStyle: TextStyle(
-            color: textSecondary.withOpacity(0.6), fontSize: 14),
+            color: textSecondary.withValues(alpha: 0.6), fontSize: 14),
         prefixIconColor: textSecondary,
         suffixIconColor: textSecondary,
       ),

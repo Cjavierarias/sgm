@@ -541,7 +541,7 @@ async def list_requests(
 @requests_router.post("/", response_model=RequestOut, status_code=201)
 async def create_request(
     payload: RequestCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin", "maintenance_manager", "technician")),
     db: AsyncSession = Depends(get_db),
 ):
     """Técnico pide un repuesto al depósito."""

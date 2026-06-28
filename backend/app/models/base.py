@@ -419,6 +419,7 @@ class Invoice(Base):
     __tablename__ = "invoices"
 
     id                  = Column(Integer, primary_key=True, index=True)
+    company_id          = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
     purchase_order_id   = Column(Integer, ForeignKey("purchase_orders.id", ondelete="SET NULL"), nullable=True, index=True)
     invoice_number      = Column(String(100), nullable=False)
     amount              = Column(Float, nullable=False)

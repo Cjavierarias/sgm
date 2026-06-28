@@ -117,21 +117,21 @@ class _RegisterScreenState extends State<RegisterScreen>
                   Text(
                     'En minutos tendrás tu sistema de\nmantenimiento industrial listo para usar.',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 16,
                       height: 1.6,
                     ),
                   ),
                   const SizedBox(height: 40),
-                  _StepBadge(n: '1', text: 'Completá los datos'),
+                  const _StepBadge(n: '1', text: 'Completá los datos'),
                   const SizedBox(height: 12),
-                  _StepBadge(n: '2', text: 'Accedés como Administrador'),
+                  const _StepBadge(n: '2', text: 'Accedés como Administrador'),
                   const SizedBox(height: 12),
-                  _StepBadge(n: '3', text: 'Invitás a tu equipo'),
+                  const _StepBadge(n: '3', text: 'Invitás a tu equipo'),
                   const Spacer(),
                   Text('© ${DateTime.now().year} ${AppConfig.companyName}',
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.35), fontSize: 12)),
+                          color: Colors.white.withValues(alpha: 0.35), fontSize: 12)),
                 ],
               ),
             ),
@@ -182,7 +182,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                        color: const Color(0xFF003A5C).withOpacity(0.15),
+                        color: const Color(0xFF003A5C).withValues(alpha: 0.15),
                         blurRadius: 24,
                         offset: const Offset(0, 8))
                   ],
@@ -222,7 +222,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               const SizedBox(height: 24),
 
               // Empresa
-              _SectionLabel(label: '🏢 Datos de la empresa'),
+              const _SectionLabel(label: '🏢 Datos de la empresa'),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _companyCtrl,
@@ -237,7 +237,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               const SizedBox(height: 20),
 
               // Admin
-              _SectionLabel(label: '👤 Administrador'),
+              const _SectionLabel(label: '👤 Administrador'),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _nameCtrl,
@@ -315,17 +315,17 @@ class _RegisterScreenState extends State<RegisterScreen>
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8F5E9),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF2D9F5E).withOpacity(0.3)),
+                  border: Border.all(color: const Color(0xFF2D9F5E).withValues(alpha: 0.3)),
                 ),
-                child: Row(
+                child: const Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.card_giftcard_rounded, color: Color(0xFF2D9F5E), size: 20),
-                    const SizedBox(width: 10),
+                    Icon(Icons.card_giftcard_rounded, color: Color(0xFF2D9F5E), size: 20),
+                    SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text('30 días gratis',
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
@@ -350,10 +350,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: BsaTheme.error.withOpacity(0.07),
+                    color: BsaTheme.error.withValues(alpha: 0.07),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                        color: BsaTheme.error.withOpacity(0.3)),
+                        color: BsaTheme.error.withValues(alpha: 0.3)),
                   ),
                   child: Row(children: [
                     const Icon(Icons.error_outline,
@@ -413,9 +413,9 @@ class _BrandLogo extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.12),
+          color: Colors.white.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withOpacity(0.25)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
         ),
         child: const Icon(Icons.precision_manufacturing_rounded,
             color: Colors.white, size: 22),
@@ -430,7 +430,7 @@ class _BrandLogo extends StatelessWidget {
                 letterSpacing: 1)),
         Text(AppConfig.companyName,
             style: TextStyle(
-                color: Colors.white.withOpacity(0.55),
+                color: Colors.white.withValues(alpha: 0.55),
                 fontSize: 10,
                 letterSpacing: 0.3)),
       ]),
@@ -463,7 +463,7 @@ class _StepBadge extends StatelessWidget {
       const SizedBox(width: 12),
       Text(text,
           style: TextStyle(
-              color: Colors.white.withOpacity(0.85),
+              color: Colors.white.withValues(alpha: 0.85),
               fontSize: 14)),
     ]);
   }
