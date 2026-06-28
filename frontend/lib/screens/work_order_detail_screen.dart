@@ -286,28 +286,26 @@ class _StatusActions extends StatelessWidget {
     if (!canManage) return const SizedBox.shrink();
 
     final transitions = <String, String>{};
-    i {
-      us == 'open' || status == 'assigned')
-      tra
-    }nsitions['in_progress'] = 'Iniciar Trabajo';
+    if (status == 'open' || status == 'assigned') {
+      transitions['in_progress'] = 'Iniciar Trabajo';
+    }
     if (status == 'in_progress') {
       transitions['waiting_parts'] = 'Esperar Repuestos';
     }
     if (status == 'waiting_parts') {
       transitions['in_progress'] = 'Reanudar Trabajo';
     }
-    i {
-      us == 'in_progress' || status == 'wa
-    }iting_parts')
-      transitions['closed'] = 'Cerrar O {
-       if (status != 'closed' && status != '
-    }cancelled')
+    if (status == 'in_progress' || status == 'waiting_parts') {
+      transitions['closed'] = 'Cerrar OT';
+    }
+    if (status != 'closed' && status != 'cancelled') {
       transitions['cancelled'] = 'Cancelar';
+    }
 
     if (transitions.isEmpty) return const SizedBox.shrink();
 
     return Card(
-      child = Padding(
+      child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

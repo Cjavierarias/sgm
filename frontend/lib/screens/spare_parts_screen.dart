@@ -4,7 +4,6 @@ import '../main.dart' show BsaTheme;
 import '../providers/auth_provider.dart';
 import 'spare_part_detail_screen.dart';
 
-
 class SparePartsScreen extends StatefulWidget {
   const SparePartsScreen({super.key});
   @override
@@ -65,8 +64,6 @@ class _SparePartsScreenState extends State<SparePartsScreen>
     final auth = Provider.of<AuthProvider>(context);
     final canManage =
         auth.hasAnyRole(['admin', 'warehouse', 'maintenance_manager']);
-    // Técnicos pueden ver stock aunque no gestionar
-    final canView = auth.hasAnyRole(['admin', 'warehouse', 'maintenance_manager', 'technician', 'purchasing']);
     final pendingCount =
         _requests.where((r) => r['status'] == 'pending').length;
 
@@ -123,8 +120,7 @@ class _SparePartsScreenState extends State<SparePartsScreen>
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Nuevo'),
-                style:
-                    ElevatedButton.styleFrom(minimumSize: const Size(0, 36)),
+                style: ElevatedButton.styleFrom(minimumSize: const Size(0, 36)),
                 onPressed: () async {
                   await Navigator.push(
                     context,
@@ -162,7 +158,8 @@ class _SparePartsScreenState extends State<SparePartsScreen>
                 ),
               ],
             ),
-      floatingActionButton: auth.hasAnyRole(['admin', 'maintenance_manager', 'technician', 'warehouse'])
+      floatingActionButton: auth.hasAnyRole(
+              ['admin', 'maintenance_manager', 'technician', 'warehouse'])
           ? FloatingActionButton.extended(
               onPressed: () async {
                 await _showRequestForm(context);
@@ -197,8 +194,7 @@ class _SparePartsScreenState extends State<SparePartsScreen>
               children: [
                 DropdownButtonFormField<int>(
                   value: selectedPartId,
-                  decoration:
-                      const InputDecoration(labelText: 'Repuesto *'),
+                  decoration: const InputDecoration(labelText: 'Repuesto *'),
                   items: _parts
                       .map((p) => DropdownMenuItem(
                             value: p['id'] as int,
@@ -233,12 +229,13 @@ class _SparePartsScreenState extends State<SparePartsScreen>
                 if (selectedPartId == null) return;
                 final qty = double.tryParse(qtyCtrl.text) ?? 0;
                 if (qty <= 0) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(content: Text('Ingresá una cantidad válida')));
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                      content: Text('Ingresá una cantidad válida')));
                   return;
                 }
                 try {
-                  final auth = Provider.of<AuthProvider>(context, listen: false);
+                  final auth =
+                      Provider.of<AuthProvider>(context, listen: false);
                   await auth.apiService.createSparePartRequest({
                     'spare_part_id': selectedPartId,
                     'quantity': qty,
@@ -253,8 +250,9 @@ class _SparePartsScreenState extends State<SparePartsScreen>
                     ),
                   );
                 } catch (e) {
-                  if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(content: Text('Error: $e')));
+                  if (ctx.mounted)
+                    ScaffoldMessenger.of(ctx)
+                        .showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               },
               child: const Text('Enviar Pedido'),
@@ -310,8 +308,8 @@ class _PartsTab extends StatelessWidget {
               if (lowStockCount > 0) ...[
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -342,13 +340,12 @@ class _PartsTab extends StatelessWidget {
             child: parts.isEmpty
                 ? const Center(child: Text('No hay repuestos registrados'))
                 : ListView.separated(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     itemCount: parts.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: 8),
-                    itemBuilder: (context, i) =>
-                        _PartCard(part: parts[i], auth: auth, onRefresh: onRefresh),
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, i) => _PartCard(
+                        part: parts[i], auth: auth, onRefresh: onRefresh),
                   ),
           ),
         ),
@@ -361,14 +358,16 @@ class _PartCard extends StatelessWidget {
   final Map<String, dynamic> part;
   final AuthProvider auth;
   final VoidCallback onRefresh;
-  const _PartCard({required this.part, required this.auth, required this.onRefresh});
+  const _PartCard(
+      {required this.part, required this.auth, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
     final stock = (part['stock'] as num?)?.toDouble() ?? 0;
     final minStock = (part['min_stock'] as num?)?.toDouble() ?? 0;
     final isLow = part['is_low_stock'] == true;
-    final canManage = auth.hasAnyRole(['admin', 'warehouse', 'maintenance_manager']);
+    final canManage =
+        auth.hasAnyRole(['admin', 'warehouse', 'maintenance_manager']);
 
     return Card(
       child: InkWell(
@@ -395,7 +394,9 @@ class _PartCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
-                  isLow ? Icons.warning_amber_rounded : Icons.inventory_2_rounded,
+                  isLow
+                      ? Icons.warning_amber_rounded
+                      : Icons.inventory_2_rounded,
                   color: isLow ? Colors.orange : const Color(0xFF1E3A5F),
                   size: 24,
                 ),
@@ -411,8 +412,7 @@ class _PartCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       'Código: ${part['code']} · ${part['location'] ?? 'Sin ubicación'}',
-                      style:
-                          TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -455,14 +455,16 @@ class _PartCard extends StatelessWidget {
                     const PopupMenuItem(
                         value: 'entry',
                         child: Row(children: [
-                          Icon(Icons.add_circle_outline, color: Colors.green, size: 18),
+                          Icon(Icons.add_circle_outline,
+                              color: Colors.green, size: 18),
                           SizedBox(width: 8),
                           Text('Entrada de stock'),
                         ])),
                     const PopupMenuItem(
                         value: 'exit',
                         child: Row(children: [
-                          Icon(Icons.remove_circle_outline, color: Colors.red, size: 18),
+                          Icon(Icons.remove_circle_outline,
+                              color: Colors.red, size: 18),
                           SizedBox(width: 8),
                           Text('Salida de stock'),
                         ])),
@@ -519,11 +521,11 @@ class _PartCard extends StatelessWidget {
               final authProv =
                   Provider.of<AuthProvider>(context, listen: false);
               if (isEntry) {
-                await authProv.apiService.sparePartEntry(
-                    part['id'] as int, qty, notesCtrl.text);
+                await authProv.apiService
+                    .sparePartEntry(part['id'] as int, qty, notesCtrl.text);
               } else {
-                await authProv.apiService.sparePartExit(
-                    part['id'] as int, qty, notesCtrl.text);
+                await authProv.apiService
+                    .sparePartExit(part['id'] as int, qty, notesCtrl.text);
               }
               if (ctx.mounted) Navigator.pop(ctx);
             },
@@ -546,11 +548,16 @@ class _RequestsTab extends StatelessWidget {
 
   Color _statusColor(String s) {
     switch (s) {
-      case 'pending': return Colors.orange;
-      case 'approved': return const Color(0xFF2E86AB);
-      case 'delivered': return const Color(0xFF27AE60);
-      case 'rejected': return Colors.red;
-      default: return Colors.grey;
+      case 'pending':
+        return Colors.orange;
+      case 'approved':
+        return const Color(0xFF2E86AB);
+      case 'delivered':
+        return const Color(0xFF27AE60);
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -566,7 +573,8 @@ class _RequestsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canManage = auth.hasAnyRole(['admin', 'warehouse', 'maintenance_manager']);
+    final canManage =
+        auth.hasAnyRole(['admin', 'warehouse', 'maintenance_manager']);
 
     return RefreshIndicator(
       onRefresh: () async => onRefresh(),
@@ -591,8 +599,7 @@ class _RequestsTab extends StatelessWidget {
                               child: Text(
                                 '${req['spare_part_name'] ?? 'Repuesto'} (${req['spare_part_code'] ?? ''})',
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14),
+                                    fontWeight: FontWeight.w600, fontSize: 14),
                               ),
                             ),
                             Container(
@@ -615,12 +622,14 @@ class _RequestsTab extends StatelessWidget {
                         const SizedBox(height: 6),
                         Text(
                           'Cantidad: ${req['quantity']} · Solicitado por: ${req['requested_by_name'] ?? 'N/A'}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey[600]),
                         ),
                         if (req['work_order_title'] != null)
                           Text(
                             'OT: ${req['work_order_title']}',
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey[600]),
                           ),
                         if (req['notes'] != null &&
                             (req['notes'] as String).isNotEmpty)
@@ -673,8 +682,8 @@ class _RequestsTab extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               OutlinedButton.icon(
-                                icon: const Icon(Icons.cancel_outlined,
-                                    size: 16),
+                                icon:
+                                    const Icon(Icons.cancel_outlined, size: 16),
                                 label: const Text('Rechazar',
                                     style: TextStyle(fontSize: 13)),
                                 style: OutlinedButton.styleFrom(
@@ -683,8 +692,7 @@ class _RequestsTab extends StatelessWidget {
                                   await Provider.of<AuthProvider>(context,
                                           listen: false)
                                       .apiService
-                                      .rejectSparePartRequest(
-                                          req['id'] as int);
+                                      .rejectSparePartRequest(req['id'] as int);
                                   onRefresh();
                                 },
                               ),
@@ -705,7 +713,8 @@ class _RequestsTab extends StatelessWidget {
                                   await Provider.of<AuthProvider>(context,
                                           listen: false)
                                       .apiService
-                                      .deliverSparePartRequest(req['id'] as int);
+                                      .deliverSparePartRequest(
+                                          req['id'] as int);
                                   onRefresh();
                                 },
                               ),
@@ -830,7 +839,8 @@ class _MovementsTabState extends State<_MovementsTab> {
     final grouped = <String, List<Map<String, dynamic>>>{};
     for (final m in _movements) {
       final dt = DateTime.parse(m['created_at'] as String);
-      final key = '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+      final key =
+          '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
       grouped.putIfAbsent(key, () => []).add(m);
     }
 
@@ -839,8 +849,12 @@ class _MovementsTabState extends State<_MovementsTab> {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: Text('Historial de movimientos (últimos 30 días)',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey[700]),
+          child: Text(
+            'Historial de movimientos (últimos 30 días)',
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700]),
           ),
         ),
         ...grouped.entries.map((entry) {
@@ -848,8 +862,10 @@ class _MovementsTabState extends State<_MovementsTab> {
           // Calcular resumen del día
           double entries = 0, exits = 0;
           for (final m in dayMovements) {
-            if (m['movement_type'] == 'entry') entries += (m['quantity'] as num).toDouble();
-            else exits += (m['quantity'] as num).toDouble();
+            if (m['movement_type'] == 'entry')
+              entries += (m['quantity'] as num).toDouble();
+            else
+              exits += (m['quantity'] as num).toDouble();
           }
           return Card(
             margin: const EdgeInsets.only(bottom: 8),
@@ -861,60 +877,80 @@ class _MovementsTabState extends State<_MovementsTab> {
                   Row(
                     children: [
                       Text(entry.key,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
                       const Spacer(),
                       if (entries > 0)
-                        Text('+$entries  ', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600, fontSize: 12)),
+                        Text('+$entries  ',
+                            style: const TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12)),
                       if (exits > 0)
-                        Text('-$exits', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600, fontSize: 12)),
+                        Text('-$exits',
+                            style: const TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12)),
                     ],
                   ),
                   const Divider(height: 12),
                   ...dayMovements.map((m) => Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: _movementColor(m['movement_type'] as String).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            m['movement_type'] == 'entry' ? 'ENT' : 'SAL',
-                            style: TextStyle(
-                              fontSize: 10, fontWeight: FontWeight.bold,
-                              color: _movementColor(m['movement_type'] as String),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${m['spare_part_name'] ?? 'N/A'} (${m['spare_part_code'] ?? ''})',
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color:
+                                    _movementColor(m['movement_type'] as String)
+                                        .withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(4),
                               ),
-                              if (m['notes'] != null)
-                                Text(m['notes'] as String,
-                                    style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                            ],
-                          ),
+                              child: Text(
+                                m['movement_type'] == 'entry' ? 'ENT' : 'SAL',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: _movementColor(
+                                      m['movement_type'] as String),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${m['spare_part_name'] ?? 'N/A'} (${m['spare_part_code'] ?? ''})',
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                  if (m['notes'] != null)
+                                    Text(m['notes'] as String,
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey[600])),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${(m['quantity'] as num).toStringAsFixed(0)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: _movementColor(
+                                    m['movement_type'] as String),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${(m['quantity'] as num).toStringAsFixed(0)}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 13,
-                            color: _movementColor(m['movement_type'] as String),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )),
+                      )),
                 ],
               ),
             ),
@@ -951,7 +987,6 @@ class _MovementsTabState extends State<_MovementsTab> {
                   ),
                   const SizedBox(height: 16),
                   ..._items.asMap().entries.map((entry) {
-                    final idx = entry.key;
                     final item = entry.value;
                     return Card(
                       child: Padding(
@@ -965,19 +1000,22 @@ class _MovementsTabState extends State<_MovementsTab> {
                                     value: item.sparePartId,
                                     decoration: const InputDecoration(
                                         labelText: 'Repuesto *',
-                                        contentPadding:
-                                            EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 8)),
                                     isExpanded: true,
                                     items: widget.parts
                                         .map((p) => DropdownMenuItem(
                                               value: p['id'] as int,
                                               child: Text(
                                                   '${p['code']} - ${p['name']} (${p['stock']} ${p['unit']})',
-                                                  overflow: TextOverflow.ellipsis,
-                                                  style: const TextStyle(fontSize: 13)),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                      fontSize: 13)),
                                             ))
                                         .toList(),
-                                    onChanged: (v) => setD(() => item.sparePartId = v),
+                                    onChanged: (v) =>
+                                        setD(() => item.sparePartId = v),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -987,10 +1025,11 @@ class _MovementsTabState extends State<_MovementsTab> {
                                     initialValue: item.quantity.toString(),
                                     decoration: const InputDecoration(
                                         labelText: 'Cant.',
-                                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 8)),
                                     keyboardType: TextInputType.number,
-                                    onChanged: (v) =>
-                                        setD(() => item.quantity = double.tryParse(v) ?? 1),
+                                    onChanged: (v) => setD(() => item.quantity =
+                                        double.tryParse(v) ?? 1),
                                   ),
                                 ),
                               ],
@@ -1000,8 +1039,11 @@ class _MovementsTabState extends State<_MovementsTab> {
                               initialValue: item.notes,
                               decoration: InputDecoration(
                                   labelText: 'Notas (opcional)',
-                                  hintText: isEntry ? 'Ej: Recepción OC #123' : 'Ej: Entregado a técnico',
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
+                                  hintText: isEntry
+                                      ? 'Ej: Recepción OC #123'
+                                      : 'Ej: Entregado a técnico',
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 8)),
                               onChanged: (v) => setD(() => item.notes = v),
                             ),
                           ],
@@ -1044,8 +1086,9 @@ class _MovementsTabState extends State<_MovementsTab> {
                         })
                     .toList();
                 if (validItems.isEmpty) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(content: Text('Agregá al menos un artículo con cantidad válida')));
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                      content: Text(
+                          'Agregá al menos un artículo con cantidad válida')));
                   return;
                 }
                 // Agregar nota general a cada item si no tiene notas específicas
@@ -1067,13 +1110,13 @@ class _MovementsTabState extends State<_MovementsTab> {
                     final msg = errors.isEmpty
                         ? '✅ ${r['processed']} artículo(s) procesado(s)'
                         : '⚠️ ${r['processed']} procesado(s), ${errors.length} error(es):\n${errors.join('\n')}';
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(msg)));
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text(msg)));
                   }
                 } catch (e) {
                   if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(content: Text('Error: $e')));
+                    ScaffoldMessenger.of(ctx)
+                        .showSnackBar(SnackBar(content: Text('Error: $e')));
                   }
                 }
               },
@@ -1091,5 +1134,5 @@ class _BatchItem {
   double quantity = 1;
   String? notes;
 
-  _BatchItem({this.sparePartId, this.quantity = 1, this.notes});
+  _BatchItem();
 }
